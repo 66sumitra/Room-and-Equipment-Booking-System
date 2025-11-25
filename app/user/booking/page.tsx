@@ -7,94 +7,165 @@ import { Input } from '@/components/ui/Input';
 import { Toast } from '@/components/ui/Toast';
 import Link from 'next/link';
 
+type ComputerStatus = 'available' | 'maintenance' | 'damaged';
+
+interface Computer {
+  id: string;
+  roomCode: string;
+  pcNumberInRoom: string;
+  pcCode: string;
+  position: string;
+  status: ComputerStatus;
+}
+
+interface ComputerRoom {
+  id: string;
+  name: string;
+  roomCode: string;
+  building: string;
+  floor: string;
+  description: string;
+  computers: Computer[];
+}
+
+const createComputers = (roomCode: string, total: number): Computer[] =>
+  Array.from({ length: total }, (_, index) => {
+    const positionRow = String.fromCharCode(65 + Math.floor(index / 8));
+    const positionSeat = (index % 8) + 1;
+    const status: ComputerStatus =
+      (index + 1) % 10 === 0 ? 'maintenance' : (index + 1) % 15 === 0 ? 'damaged' : 'available';
+
+    return {
+      id: `${roomCode.toLowerCase()}-pc-${index + 1}`,
+      roomCode,
+      pcNumberInRoom: String(index + 1).padStart(2, '0'),
+      pcCode: `${roomCode}-PC${String(index + 1).padStart(2, '0')}`,
+      position: `แถว ${positionRow} ที่นั่ง ${positionSeat}`,
+      status,
+    };
+  });
+
+const computerRooms: ComputerRoom[] = [
+  {
+    id: 'lab501',
+    name: 'ห้องคอมพิวเตอร์ LAB501',
+    roomCode: 'LAB501',
+    building: 'อาคาร 1',
+    floor: '5',
+    description: 'ห้องปฏิบัติการหลักสำหรับการเรียนการสอนด้านโปรแกรมมิ่งและระบบเครือข่าย',
+    computers: createComputers('LAB501', 24),
+  },
+  {
+    id: 'lab302',
+    name: 'ห้องคอมพิวเตอร์ LAB302',
+    roomCode: 'LAB302',
+    building: 'อาคาร 2',
+    floor: '3',
+    description: 'เหมาะสำหรับการอบรมระยะสั้นและการสอบมาตรฐานวิชาชีพ',
+    computers: createComputers('LAB302', 20),
+  },
+  {
+    id: 'lab215',
+    name: 'ห้องคอมพิวเตอร์ LAB215',
+    roomCode: 'LAB215',
+    building: 'อาคาร 3',
+    floor: '2',
+    description: 'รองรับงานวิจัย การออกแบบสื่อ และการทำงานกลุ่มของนักศึกษา',
+    computers: createComputers('LAB215', 18),
+  },
+];
+
 export default function UserBookingPage() {
-  const [activeTab, setActiveTab] = useState<'room' | 'equipment'>('room');
+  const [activeTab, setActiveTab] = useState<'computer' | 'equipment'>('computer');
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<'room' | 'equipment' | null>(null);
+  const [selectedType, setSelectedType] = useState<'computer' | 'equipment' | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
 
-  const rooms = [
-    {
-      id: '1',
-      name: 'ห้องประชุม A',
-      capacity: 30,
-      facilities: ['คอมพิวเตอร์', 'โปรเจคเตอร์', 'Wi-Fi', 'เครื่องปรับอากาศ'],
-      location: 'อาคาร 1 ชั้น 2',
-      available: true,
-      image: '🏢',
-    },
-    {
-      id: '2',
-      name: 'ห้องประชุม B',
-      capacity: 20,
-      facilities: ['คอมพิวเตอร์', 'โปรเจคเตอร์', 'Wi-Fi'],
-      location: 'อาคาร 1 ชั้น 3',
-      available: true,
-      image: '🏢',
-    },
-    {
-      id: '3',
-      name: 'ห้องสัมมนา C',
-      capacity: 15,
-      facilities: ['คอมพิวเตอร์', 'Wi-Fi'],
-      location: 'อาคาร 2 ชั้น 1',
-      available: true,
-      image: '🏢',
-    },
-  ];
-
   const equipment = [
     {
-      id: '1',
-      name: 'โน๊ตบุ๊ค Dell',
-      category: 'คอมพิวเตอร์',
-      description: 'Dell Latitude 7420, Intel Core i7, RAM 16GB',
+      id: 'lab501-set',
+      name: 'ชุดทดลองฟิสิกส์ขั้นสูง',
+      category: 'ฟิสิกส์ประยุกต์',
+      lab: 'LAB501 - ห้องทดลองฟิสิกส์',
+      description: 'Workstation Dell Precision + GPU NVIDIA A4000 สำหรับจำลองฟิสิกส์',
       available: 7,
       total: 10,
-      image: '💻',
+      image: '🔬',
     },
     {
-      id: '2',
-      name: 'โปรเจคเตอร์ Epson',
-      category: 'อุปกรณ์นำเสนอ',
-      description: 'Epson Full HD สำหรับนำเสนอ',
+      id: 'lab302-pj',
+      name: 'ระบบสาธิตควบคุมวิศวกรรม',
+      category: 'วิศวกรรมระบบ',
+      lab: 'LAB302 - ห้องวิศวกรรมระบบ',
+      description: 'โปรเจคเตอร์เลเซอร์ 4K พร้อมชุดแขวน เพื่อสาธิตระบบควบคุม',
       available: 3,
       total: 5,
-      image: '📽️',
+      image: '⚙️',
     },
     {
-      id: '3',
-      name: 'แท็บเล็ต iPad',
-      category: 'แท็บเล็ต',
-      description: 'iPad Pro 12.9 นิ้ว พร้อม Apple Pencil',
+      id: 'lab215-tab',
+      name: 'ชุดบันทึกผลการทดลอง',
+      category: 'วิศวกรรมไฟฟ้า',
+      lab: 'LAB215 - ห้องวิศวกรรมไฟฟ้า',
+      description: 'iPad Pro 12.9" + Apple Pencil สำหรับบันทึกผลการทดลอง',
       available: 5,
       total: 8,
-      image: '📱',
+      image: '📐',
     },
     {
-      id: '4',
-      name: 'กล้องถ่ายภาพ Canon',
-      category: 'กล้อง',
-      description: 'Canon EOS R6 สำหรับงานถ่ายภาพ',
+      id: 'lab215-scope',
+      name: 'ชุดถ่ายเก็บสนามแม่เหล็ก',
+      category: 'ฟิสิกส์ขั้นสูง',
+      lab: 'LAB215 - ห้องวิศวกรรมไฟฟ้า',
+      description: 'Canon EOS R6 + เลนส์ Macro สำหรับเก็บภาพการทดลอง',
       available: 1,
       total: 3,
-      image: '📷',
+      image: '🧲',
     },
   ];
 
-  const filteredRooms = rooms.filter(room =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredComputerRooms = computerRooms.filter((room) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      room.name.toLowerCase().includes(query) ||
+      room.roomCode.toLowerCase().includes(query) ||
+      `${room.building} ชั้น ${room.floor}`.toLowerCase().includes(query)
+    );
+  });
 
-  const filteredEquipment = equipment.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const statusStyles: Record<ComputerStatus, { badge: string; border: string }> = {
+    available: {
+      badge: 'bg-green-100 text-green-700',
+      border: 'border-green-300 bg-green-50 hover:border-green-400',
+    },
+    maintenance: {
+      badge: 'bg-yellow-100 text-yellow-700',
+      border: 'border-yellow-300 bg-yellow-50 hover:border-yellow-400',
+    },
+    damaged: {
+      badge: 'bg-red-100 text-red-700',
+      border: 'border-red-300 bg-red-50 hover:border-red-400',
+    },
+  };
 
-  const handleBook = (type: 'room' | 'equipment', item: any) => {
+  const statusLabels: Record<ComputerStatus, string> = {
+    available: 'ว่าง',
+    maintenance: 'ซ่อมบำรุง',
+    damaged: 'ชำรุด',
+  };
+
+  const filteredEquipment = equipment.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query) ||
+      item.lab.toLowerCase().includes(query)
+    );
+  });
+
+  const handleBook = (type: 'computer' | 'equipment', item: any) => {
     setSelectedType(type);
     setSelectedItem(item);
     setIsBookingModalOpen(true);
@@ -116,8 +187,8 @@ export default function UserBookingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">ระบบจองห้องและอุปกรณ์</h1>
-              <p className="text-sm text-gray-500 mt-1">จองห้องและอุปกรณ์ได้อย่างสะดวก</p>
+              <h1 className="text-2xl font-bold text-gray-800">ระบบขอใช้คอมพิวเตอร์และอุปกรณ์</h1>
+              <p className="text-sm text-gray-500 mt-1">เลือกห้องคอมและอุปกรณ์ที่ต้องการใช้ได้ในที่เดียว</p>
             </div>
             <div className="flex items-center gap-4">
               <Link href="/user/my-bookings">
@@ -160,7 +231,7 @@ export default function UserBookingPage() {
             </div>
             <input
               type="text"
-              placeholder="ค้นหาห้องหรืออุปกรณ์..."
+              placeholder="ค้นหาห้องคอมพิวเตอร์หรืออุปกรณ์..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -172,9 +243,9 @@ export default function UserBookingPage() {
         <div className="mb-6">
           <div className="flex gap-2 bg-white rounded-lg p-1 shadow-sm">
             <button
-              onClick={() => setActiveTab('room')}
+              onClick={() => setActiveTab('computer')}
               className={`flex-1 px-6 py-3 rounded-md font-medium transition-all ${
-                activeTab === 'room'
+                activeTab === 'computer'
                   ? 'bg-blue-700 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
@@ -183,7 +254,7 @@ export default function UserBookingPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                จองห้อง ({rooms.length})
+                ขอใช้คอมพิวเตอร์ ({computerRooms.length})
               </span>
             </button>
             <button
@@ -204,75 +275,89 @@ export default function UserBookingPage() {
           </div>
         </div>
 
-        {/* Rooms Section */}
-        {activeTab === 'room' && (
+        {/* Computer Rooms Section */}
+        {activeTab === 'computer' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">ห้องที่สามารถจองได้</h2>
-              <span className="text-sm text-gray-500">{filteredRooms.length} ห้อง</span>
+              <h2 className="text-xl font-semibold text-gray-800">ขอใช้คอมพิวเตอร์ในห้องปฏิบัติการ</h2>
+              <span className="text-sm text-gray-500">{filteredComputerRooms.length} ห้องคอม</span>
             </div>
-            {filteredRooms.length === 0 ? (
+            {filteredComputerRooms.length === 0 ? (
               <div className="bg-white rounded-lg shadow-md p-12 text-center">
                 <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-gray-500">ไม่พบห้องที่ค้นหา</p>
+                <p className="text-gray-500">ไม่พบห้องคอมที่ค้นหา</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredRooms.map((room) => (
-                  <div
-                    key={room.id}
-                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
-                  >
-                    <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 text-center">
-                      <div className="text-5xl mb-2">{room.image}</div>
-                      <h3 className="text-xl font-bold text-white">{room.name}</h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                          <span className="text-sm">ความจุ: <strong>{room.capacity}</strong> คน</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <span className="text-sm">{room.location}</span>
-                        </div>
+              <div className="space-y-8">
+                {filteredComputerRooms.map((room) => {
+                  const summary = room.computers.reduce<Record<ComputerStatus, number>>(
+                    (acc, computer) => {
+                      acc[computer.status] += 1;
+                      return acc;
+                    },
+                    { available: 0, maintenance: 0, damaged: 0 }
+                  );
+                  const statusOrder: ComputerStatus[] = ['available', 'maintenance', 'damaged'];
+
+                  return (
+                    <div key={room.id} className="bg-white rounded-xl shadow-md p-6">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
-                          <p className="text-xs text-gray-500 mb-2">สิ่งอำนวยความสะดวก:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {room.facilities.map((facility) => (
-                              <span
-                                key={facility}
-                                className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium"
-                              >
-                                {facility}
-                              </span>
-                            ))}
+                          <p className="text-sm text-blue-600 font-semibold">{room.roomCode}</p>
+                          <h3 className="text-2xl font-bold text-gray-900 mt-1">{room.name}</h3>
+                          <p className="text-sm text-gray-500 mt-1">{room.description}</p>
+                          <div className="mt-2 text-sm text-gray-600 flex flex-wrap gap-3">
+                            <span>{room.building}</span>
+                            <span>•</span>
+                            <span>ชั้น {room.floor}</span>
+                            <span>•</span>
+                            <span>จำนวนเครื่อง {room.computers.length} เครื่อง</span>
                           </div>
                         </div>
+                        <div className="flex flex-wrap gap-2">
+                          {statusOrder.map((status) => (
+                            <span
+                              key={`${room.id}-${status}`}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyles[status].badge}`}
+                            >
+                              {statusLabels[status]}: {summary[status]}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <Button
-                        variant="primary"
-                        className="w-full bg-gradient-to-r from-blue-700 to-teal-600 hover:from-blue-800 hover:to-teal-700"
-                        onClick={() => handleBook('room', room)}
-                      >
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          จองห้องนี้
-                        </span>
-                      </Button>
+                      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {room.computers.map((computer) => (
+                          <button
+                            key={computer.id}
+                            type="button"
+                            onClick={() =>
+                              handleBook('computer', {
+                                ...computer,
+                                name: `${room.roomCode} - เครื่องที่ ${computer.pcNumberInRoom}`,
+                                roomName: room.name,
+                                building: room.building,
+                                floor: room.floor,
+                              })
+                            }
+                            className={`p-4 rounded-lg border-2 text-left transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${statusStyles[computer.status].border}`}
+                          >
+                            <p className="font-mono font-bold text-lg text-gray-800">{computer.pcNumberInRoom}</p>
+                            <p className="font-mono text-xs text-gray-600 mt-1">{computer.pcCode}</p>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-semibold mt-2 ${statusStyles[computer.status].badge}`}
+                            >
+                              {statusLabels[computer.status]}
+                            </span>
+                            <p className="text-xs text-gray-500 mt-2">{computer.position}</p>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-4 text-sm text-gray-500">คลิกที่หมายเลขเครื่องเพื่อส่งคำขอใช้คอมพิวเตอร์</p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -282,7 +367,7 @@ export default function UserBookingPage() {
         {activeTab === 'equipment' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">อุปกรณ์ที่สามารถจองได้</h2>
+              <h2 className="text-xl font-semibold text-gray-800">อุปกรณ์ในห้อง LAB ฟิสิกส์-วิศวะ</h2>
               <span className="text-sm text-gray-500">{filteredEquipment.length} รายการ</span>
             </div>
             {filteredEquipment.length === 0 ? (
@@ -302,7 +387,8 @@ export default function UserBookingPage() {
                     <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-center">
                       <div className="text-5xl mb-2">{item.image}</div>
                       <h3 className="text-xl font-bold text-white">{item.name}</h3>
-                      <p className="text-blue-100 text-sm mt-1">{item.category}</p>
+                      <p className="text-blue-100 text-sm mt-1">{item.lab}</p>
+                      <p className="text-blue-100 text-xs">{item.category}</p>
                     </div>
                     <div className="p-6">
                       <p className="text-sm text-gray-600 mb-4">{item.description}</p>
@@ -349,7 +435,7 @@ export default function UserBookingPage() {
       <Modal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
-        title={selectedType === 'room' ? 'จองห้อง' : 'จองอุปกรณ์'}
+        title={selectedType === 'computer' ? 'ขอใช้คอมพิวเตอร์' : 'จองอุปกรณ์'}
         size="lg"
       >
         {selectedItem && (
@@ -357,11 +443,13 @@ export default function UserBookingPage() {
             <div className="bg-gradient-to-r from-blue-50 to-teal-50 rounded-lg p-4 border border-blue-100">
               <p className="text-sm text-gray-600 mb-1">รายการที่เลือก</p>
               <p className="text-xl font-bold text-gray-800">{selectedItem.name}</p>
-              {selectedType === 'room' && (
-                <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
-                  <span>ความจุ: {selectedItem.capacity} คน</span>
+              {selectedType === 'computer' && (
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                  <span>ห้อง: {selectedItem.roomName} ({selectedItem.roomCode})</span>
                   <span>•</span>
-                  <span>{selectedItem.location}</span>
+                  <span>เครื่องที่ {selectedItem.pcNumberInRoom}</span>
+                  <span>•</span>
+                  <span>{selectedItem.position}</span>
                 </div>
               )}
               {selectedType === 'equipment' && (
@@ -393,12 +481,12 @@ export default function UserBookingPage() {
                   className="w-full"
                 />
               </div>
-              {selectedType === 'room' && (
+              {selectedType === 'computer' && (
                 <div>
                   <Input
                     type="number"
-                    label="จำนวนคน"
-                    placeholder="ระบุจำนวนผู้เข้าร่วม"
+                    label="จำนวนผู้ใช้งาน"
+                    placeholder="ระบุจำนวนผู้ที่จะใช้เครื่อง"
                     className="w-full"
                   />
                 </div>

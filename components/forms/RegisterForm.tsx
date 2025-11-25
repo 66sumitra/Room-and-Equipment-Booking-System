@@ -37,7 +37,7 @@ export const RegisterForm: React.FC = () => {
     }
     
     // Redirect ไปหน้า dashboard
-    router.push('/dashboard');
+    router.push('/login');
   };
   
   return (

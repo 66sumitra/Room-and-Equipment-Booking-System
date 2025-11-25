@@ -15,28 +15,40 @@ export default function EquipmentPage() {
 
   const sampleEquipment = [
     {
-      id: '1',
-      name: 'โน๊ตบุ๊ค Dell',
-      description: 'โน๊ตบุ๊ค Dell Latitude 7420, Intel Core i7, RAM 16GB',
-      category: 'คอมพิวเตอร์',
+      id: 'lab501-core',
+      name: 'ชุดทดลองฟิสิกส์ขั้นสูง',
+      lab: 'LAB501 - ห้องทดลองฟิสิกส์',
+      description: 'Workstation Dell Precision + GPU NVIDIA A4000 สำหรับจำลองฟิสิกส์',
+      category: 'ฟิสิกส์ประยุกต์',
       quantity: 10,
       available: 7,
     },
     {
-      id: '2',
-      name: 'โปรเจคเตอร์ Epson',
-      description: 'โปรเจคเตอร์ Epson Full HD สำหรับนำเสนอ',
-      category: 'อุปกรณ์นำเสนอ',
+      id: 'lab302-control',
+      name: 'ระบบสาธิตควบคุมวิศวกรรม',
+      lab: 'LAB302 - ห้องวิศวกรรมระบบ',
+      description: 'โปรเจคเตอร์เลเซอร์ 4K พร้อมแขนสาธิตการควบคุมอัตโนมัติ',
+      category: 'วิศวกรรมระบบ',
       quantity: 5,
       available: 3,
     },
     {
-      id: '3',
-      name: 'แท็บเล็ต iPad',
-      description: 'iPad Pro 12.9 นิ้ว พร้อม Apple Pencil',
-      category: 'แท็บเล็ต',
+      id: 'lab215-note',
+      name: 'ชุดบันทึกผลการทดลอง',
+      lab: 'LAB215 - ห้องวิศวกรรมไฟฟ้า',
+      description: 'iPad Pro 12.9" + Apple Pencil สำหรับเก็บบันทึกและเซ็นเอกสารแลบ',
+      category: 'วิศวกรรมไฟฟ้า',
       quantity: 8,
       available: 5,
+    },
+    {
+      id: 'lab215-magnet',
+      name: 'ชุดถ่ายเก็บสนามแม่เหล็ก',
+      lab: 'LAB215 - ห้องวิศวกรรมไฟฟ้า',
+      description: 'Canon EOS R6 + เลนส์ Macro สำหรับเก็บภาพการทดลองสนามแม่เหล็ก',
+      category: 'ฟิสิกส์ขั้นสูง',
+      quantity: 3,
+      available: 1,
     },
   ];
 
@@ -74,7 +86,10 @@ export default function EquipmentPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">{equipment.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{equipment.category}</p>
+                {equipment.lab && (
+                  <p className="text-sm text-blue-600 mt-1">{equipment.lab}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-0.5">{equipment.category}</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -106,6 +121,9 @@ export default function EquipmentPage() {
                 <p className="text-2xl font-bold text-green-700">{equipment.available}</p>
               </div>
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              พร้อมใช้งาน {equipment.available} / {equipment.quantity} รายการ
+            </p>
           </div>
         ))}
       </div>
@@ -130,15 +148,25 @@ export default function EquipmentPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              ห้องแลบ/สถานที่
+            </label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="เช่น LAB501 - ห้องทดลองฟิสิกส์"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               หมวดหมู่
             </label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option>เลือกหมวดหมู่</option>
-              <option>คอมพิวเตอร์</option>
-              <option>อุปกรณ์นำเสนอ</option>
-              <option>แท็บเล็ต</option>
-              <option>กล้อง</option>
-              <option>เสียง</option>
+              <option>ฟิสิกส์ประยุกต์</option>
+              <option>วิศวกรรมระบบ</option>
+              <option>วิศวกรรมไฟฟ้า</option>
+              <option>ฟิสิกส์ขั้นสูง</option>
+              <option>อื่นๆ</option>
             </select>
           </div>
           <div>
@@ -208,17 +236,27 @@ export default function EquipmentPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                ห้องแลบ/สถานที่
+              </label>
+              <input
+                type="text"
+                defaultValue={selectedEquipment.lab}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 หมวดหมู่
               </label>
               <select
                 defaultValue={selectedEquipment.category}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option>คอมพิวเตอร์</option>
-                <option>อุปกรณ์นำเสนอ</option>
-                <option>แท็บเล็ต</option>
-                <option>กล้อง</option>
-                <option>เสียง</option>
+                <option>ฟิสิกส์ประยุกต์</option>
+                <option>วิศวกรรมระบบ</option>
+                <option>วิศวกรรมไฟฟ้า</option>
+                <option>ฟิสิกส์ขั้นสูง</option>
+                <option>อื่นๆ</option>
               </select>
             </div>
             <div>

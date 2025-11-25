@@ -30,7 +30,6 @@ export default function ComputersPage() {
       roomCode: 'LAB501',
       pcNumberInRoom: '01',
       pcCode: 'LAB501-PC01',
-      position: 'แถว A ที่นั่ง 1',
       specs: { cpu: 'Intel i5', ram: '16GB', storage: 'SSD 512GB' },
       status: 'available',
     },
@@ -40,7 +39,7 @@ export default function ComputersPage() {
       roomCode: 'LAB501',
       pcNumberInRoom: '02',
       pcCode: 'LAB501-PC02',
-      position: 'แถว A ที่นั่ง 2',
+      
       specs: { cpu: 'Intel i5', ram: '16GB', storage: 'SSD 512GB' },
       status: 'available',
     },
@@ -50,7 +49,7 @@ export default function ComputersPage() {
       roomCode: 'LAB501',
       pcNumberInRoom: '03',
       pcCode: 'LAB501-PC03',
-      position: 'แถว B ที่นั่ง 1',
+      
       specs: { cpu: 'Intel i7', ram: '32GB', storage: 'SSD 1TB' },
       status: 'maintenance',
     },
@@ -60,7 +59,7 @@ export default function ComputersPage() {
       roomCode: 'LAB502',
       pcNumberInRoom: '01',
       pcCode: 'LAB502-PC01',
-      position: 'แถว A ที่นั่ง 1',
+      
       specs: { cpu: 'Intel i5', ram: '16GB', storage: 'SSD 512GB' },
       status: 'available',
     },
@@ -193,10 +192,9 @@ export default function ComputersPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รหัสเครื่อง</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">หมายเลขเครื่อง</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รหัสห้อง</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ห้อง</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ตำแหน่ง</th>
+                    
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สเปก</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">การดำเนินการ</th>
@@ -208,17 +206,13 @@ export default function ComputersPage() {
                       <td className="px-6 py-4">
                         <p className="font-mono font-semibold text-gray-800">{computer.pcCode}</p>
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-800">เครื่องที่ {computer.pcNumberInRoom}</p>
-                      </td>
+                      
                       <td className="px-6 py-4">
                         <Link href={`/admin/rooms/${computer.roomId}/computers`} className="text-blue-600 hover:text-blue-800">
                           {computer.roomCode}
                         </Link>
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-gray-600">{computer.position || '-'}</p>
-                      </td>
+                      
                       <td className="px-6 py-4">
                         {computer.specs ? (
                           <div className="text-xs text-gray-600">

@@ -11,45 +11,48 @@ export default function ApprovalsPage() {
 
   const pendingBookings = [
     {
-      id: '1',
-      type: 'room',
-      itemName: 'ห้องแลบพิเศษ',
+      id: 'LAB-501-01',
+      type: 'computer',
+      itemName: 'LAB501 - เครื่องที่ 08',
+      labName: 'ห้องคอมพิวเตอร์ LAB501',
       userName: 'อาจารย์วิชัย',
       userRole: 'teacher',
       date: '2025-12-17',
       startTime: '09:00',
-      endTime: '17:00',
-      topic: 'ทำวิจัย',
+      endTime: '12:00',
+      topic: 'สอนวิชา Network Simulation',
       numberOfPeople: 5,
-      notes: 'ต้องการใช้เครื่องมือพิเศษ',
+      notes: 'ต้องการเปิด GPU สำหรับจำลองโครงข่าย',
       requestedAt: '2025-12-14 10:30',
       requiresApproval: true,
     },
     {
-      id: '2',
-      type: 'equipment',
-      itemName: 'กล้อง Canon EOS R6',
+      id: 'LAB-302-12',
+      type: 'computer',
+      itemName: 'LAB302 - เครื่องที่ 12',
+      labName: 'ห้องคอมพิวเตอร์ LAB302',
       userName: 'นักศึกษาสมใจ',
       userRole: 'student',
       date: '2025-12-18',
       startTime: '10:00',
-      endTime: '16:00',
-      topic: 'ถ่ายภาพโปรเจค',
-      notes: 'สำหรับงานโปรเจคจบ',
+      endTime: '15:00',
+      topic: 'ซ้อมสอบมาตรฐานวิชาชีพ',
+      notes: 'ต้องการใช้ซอฟต์แวร์จำลองการควบคุม',
       requestedAt: '2025-12-14 14:20',
       requiresApproval: true,
     },
     {
-      id: '3',
-      type: 'room',
-      itemName: 'ห้องประชุมใหญ่',
+      id: 'LAB-215-EQ',
+      type: 'equipment',
+      itemName: 'ชุดบันทึกผลการทดลอง (LAB215)',
+      labName: 'ห้องวิศวกรรมไฟฟ้า LAB215',
       userName: 'อาจารย์สมชาย',
       userRole: 'teacher',
       date: '2025-12-20',
       startTime: '08:00',
       endTime: '12:00',
-      topic: 'ประชุมคณะ',
-      numberOfPeople: 30,
+      topic: 'บันทึกผลโครงงานปี 4',
+      numberOfPeople: 12,
       requestedAt: '2025-12-14 15:45',
       requiresApproval: true,
     },
@@ -68,6 +71,11 @@ export default function ApprovalsPage() {
     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการไม่อนุมัติการจองนี้?')) {
       alert(`ไม่อนุมัติการจอง #${id}`);
     }
+  };
+
+  const typeMeta: Record<string, { icon: string; label: string }> = {
+    computer: { icon: '💻', label: 'คอมพิวเตอร์' },
+    equipment: { icon: '🧲', label: 'อุปกรณ์แลบ' },
   };
 
   return (
@@ -101,11 +109,14 @@ export default function ApprovalsPage() {
                   <tr key={booking.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{booking.type === 'room' ? '🏢' : '💻'}</span>
+                        <span className="text-lg">{typeMeta[booking.type].icon}</span>
                         <div>
                           <p className="text-sm font-medium text-gray-800">{booking.itemName}</p>
-                          <p className="text-xs text-gray-500">
-                            {booking.type === 'room' ? 'ห้อง' : 'อุปกรณ์'}
+                          {booking.labName && (
+                            <p className="text-xs text-gray-500">{booking.labName}</p>
+                          )}
+                          <p className="text-[11px] text-blue-600">
+                            {typeMeta[booking.type].label}
                           </p>
                         </div>
                       </div>
@@ -173,9 +184,12 @@ export default function ApprovalsPage() {
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-800">{selectedBooking.itemName}</h3>
-                <span className="text-2xl">{selectedBooking.type === 'room' ? '🏢' : '💻'}</span>
+                <span className="text-2xl">{typeMeta[selectedBooking.type].icon}</span>
               </div>
               <p className="text-sm text-gray-600">{selectedBooking.topic}</p>
+              {selectedBooking.labName && (
+                <p className="text-xs text-gray-500 mt-1">{selectedBooking.labName}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
