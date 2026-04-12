@@ -14,56 +14,24 @@ export default function RoomComputersPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Mock data
-  /*อันเก่าconst room = {
+  const room = {
     id: roomId,
-    name: 'ห้องคอมพิวเตอร์ 1-0303',
-    roomCode: '1-0303',
+    name: 'ห้องคอมพิวเตอร์ LAB501',
+    roomCode: 'LAB501',
     building: 'อาคาร 1',
-    floor: '3',
+    floor: '5',
     computerCount: 40,
-  };*/
-  // Mock data สำหรับทุกห้อง
-const rooms = [
-  {
-    id: '1',
-    name: 'ห้องคอมพิวเตอร์ 1-0303',
-    roomCode: '1-0303',
-    building: 'อาคาร 1',
-    floor: '3',
-    computerCount: 48,
-  },
-  {
-    id: '2',
-    name: 'ห้องคอมพิวเตอร์ 1-0304',
-    roomCode: '1-0103',
-    building: 'อาคาร 1',
-    floor: '3',
-    computerCount: 50,
-  },
-];
+  };
 
-// เลือกห้องตาม roomId
-const room = rooms.find((r) => r.id === roomId) ?? rooms[0];
-
-  const computers = Array.from({ length: room.computerCount }, (_, i) => ({
-  id: `pc-${i + 1}`,
-  roomId: room.id,
-  roomCode: room.roomCode,
-  pcNumberInRoom: String(i + 1).padStart(2, '0'),
-  pcCode: `${room.roomCode}-PC${String(i + 1).padStart(2, '0')}`,
-  position: `แถว ${String.fromCharCode(65 + Math.floor(i / 10))} ที่นั่ง ${(i % 10) + 1}`,
-  status: i % 10 === 0 ? 'maintenance' : i % 15 === 0 ? 'damaged' : 'available',
-}));
-
-/*อันเก่า  const computers = Array.from({ length: 40 }, (_, i) => ({
+  const computers = Array.from({ length: 40 }, (_, i) => ({
     id: `pc-${i + 1}`,
     roomId: roomId,
-    roomCode: '1-0303',
+    roomCode: 'LAB501',
     pcNumberInRoom: String(i + 1).padStart(2, '0'),
-    pcCode: `1-0303-PC${String(i + 1).padStart(2, '0')}`,
+    pcCode: `LAB501-PC${String(i + 1).padStart(2, '0')}`,
     position: `แถว ${String.fromCharCode(65 + Math.floor(i / 10))} ที่นั่ง ${(i % 10) + 1}`,
     status: i % 10 === 0 ? 'maintenance' : i % 15 === 0 ? 'damaged' : 'available',
-  })); */
+  }));
 
   const handleViewDetail = (computer: any) => {
     setSelectedComputer(computer);

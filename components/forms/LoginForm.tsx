@@ -20,13 +20,19 @@ export const LoginForm: React.FC = () => {
       [name]: value,
     }));
   };
+<<<<<<< HEAD
   
   const handleSubmit = (e: React.FormEvent) => {
+=======
+
+  const handleSubmit = async (e: React.FormEvent) => {
+>>>>>>> d808a9b0e0b00575a7ff8903497b8130125c9d87
     e.preventDefault();
     
     const email = formData.email.trim();
     const password = formData.password;
     
+<<<<<<< HEAD
     // ตรวจสอบ credentials
     if (email === 'admin@pim.co.th' && password === '123456789') {
       // Admin login
@@ -49,6 +55,39 @@ export const LoginForm: React.FC = () => {
     } else {
       // Invalid credentials
       alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+=======
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+        return;
+      }
+
+      const data = await res.json();
+
+      // เก็บชื่อผู้ใช้ใน localStorage สำหรับ Header (ไม่ได้ใช้เพื่อความปลอดภัย)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userName', data.fullName || data.email);
+        localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('userRole', data.role);
+      }
+
+      // เปลี่ยนเส้นทางตามบทบาท
+      if (data.role === 'admin') {
+        router.push('/dashboard');
+      } else {
+        router.push('/user/booking');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+>>>>>>> d808a9b0e0b00575a7ff8903497b8130125c9d87
     }
   };
   
