@@ -18,27 +18,27 @@ export default function ComputersPage() {
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' as 'success' | 'error' | 'info' | 'warning' });
 
   const rooms = [
-    { id: '1', name: 'ห้องคอมพิวเตอร์ LAB501', roomCode: 'LAB501', building: 'อาคาร 1', floor: '5' },
-    { id: '2', name: 'ห้องคอมพิวเตอร์ LAB502', roomCode: 'LAB502', building: 'อาคาร 1', floor: '5' },
-    { id: '3', name: 'ห้องแลบ LAB201', roomCode: 'LAB201', building: 'อาคาร 2', floor: '2' },
+    { id: '1', name: 'ห้องคอมพิวเตอร์ 1-0303', roomCode: '1-0303', building: 'อาคาร 1', floor: '3' },
+    { id: '2', name: 'ห้องคอมพิวเตอร์ 1-0103', roomCode: '1-0103', building: 'อาคาร 1', floor: '3' },
+    { id: '3', name: 'ต้องลบ', roomCode: '-', building: '-', floor: '-' },
   ];
 
   const computers = [
     {
       id: '1',
       roomId: '1',
-      roomCode: 'LAB501',
+      roomCode: '1-0303',
       pcNumberInRoom: '01',
-      pcCode: 'LAB501-PC01',
+      pcCode: '1-0303-PC01',
       specs: { cpu: 'Intel i5', ram: '16GB', storage: 'SSD 512GB' },
       status: 'available',
     },
     {
       id: '2',
       roomId: '1',
-      roomCode: 'LAB501',
+      roomCode: '1-0103',
       pcNumberInRoom: '02',
-      pcCode: 'LAB501-PC02',
+      pcCode: '1-0103-PC02',
       
       specs: { cpu: 'Intel i5', ram: '16GB', storage: 'SSD 512GB' },
       status: 'available',
@@ -46,19 +46,19 @@ export default function ComputersPage() {
     {
       id: '3',
       roomId: '1',
-      roomCode: 'LAB501',
+      roomCode: '1-0303',
       pcNumberInRoom: '03',
-      pcCode: 'LAB501-PC03',
+      pcCode: '1-0303-PC03',
       
       specs: { cpu: 'Intel i7', ram: '32GB', storage: 'SSD 1TB' },
       status: 'maintenance',
     },
     {
       id: '4',
-      roomId: '2',
-      roomCode: 'LAB502',
+      roomId: '1',
+      roomCode: '1-0103',
       pcNumberInRoom: '01',
-      pcCode: 'LAB502-PC01',
+      pcCode: '1-0103-PC01',
       
       specs: { cpu: 'Intel i5', ram: '16GB', storage: 'SSD 512GB' },
       status: 'available',
@@ -226,12 +226,14 @@ export default function ComputersPage() {
                       <td className="px-6 py-4">
                         {getStatusBadge(computer.status)}
                       </td>
+                      
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEdit(computer)}
                             className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center hover:bg-blue-200 transition-colors"
                           >
+                            
                             <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>

@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    name: 'จัดการห้อง',
+    name: 'จัดการห้องคอมพิวเตอร์',
     href: '/rooms',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

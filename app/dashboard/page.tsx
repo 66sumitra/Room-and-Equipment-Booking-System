@@ -41,8 +41,8 @@ export default function DashboardPage() {
   const recentBookings = [
     {
       id: '1',
-      itemName: 'LAB501-PC03',
-      itemCode: 'LAB501-PC03',
+      itemName: '1-0303-PC03',
+      itemCode: '1-0303-PC03',
       userName: 'อาจารย์สมชาย',
       date: '2025-12-15',
       time: '09:00 - 12:00',
@@ -61,8 +61,8 @@ export default function DashboardPage() {
     },
     {
       id: '3',
-      itemName: 'LAB502-PC15',
-      itemCode: 'LAB502-PC15',
+      itemName: '1-0103-PC15',
+      itemCode: '1-0103-PC15',
       userName: 'อาจารย์สมหญิง',
       date: '2025-12-16',
       time: '08:00 - 12:00',
@@ -74,8 +74,8 @@ export default function DashboardPage() {
   const pendingApprovals = [
     {
       id: '1',
-      itemName: 'LAB501-PC20',
-      itemCode: 'LAB501-PC20',
+      itemName: '1-0303-PC20',
+      itemCode: '1-0303-PC20',
       userName: 'อาจารย์วิชัย',
       date: '2025-12-17',
       time: '09:00 - 17:00',
@@ -119,8 +119,8 @@ export default function DashboardPage() {
     {
       id: '1',
       type: 'computer',
-      name: 'LAB501-PC10',
-      itemCode: 'LAB501-PC10',
+      name: '1-0303-PC10',
+      itemCode: '1-0303-PC10',
       issueType: 'maintenance',
       description: 'เครื่องไม่เปิด',
       reportedAt: '2025-12-14',
@@ -139,9 +139,9 @@ export default function DashboardPage() {
   ];
 
   const topBookedRooms = [
-    { roomCode: 'LAB501', bookings: 45, utilization: 85 },
-    { roomCode: 'LAB502', bookings: 32, utilization: 68 },
-    { roomCode: 'LAB201', bookings: 28, utilization: 72 },
+    { roomCode: '1-0303', bookings: 45, utilization: 85 },
+    { roomCode: '1-0103', bookings: 32, utilization: 68 },
+    /*{ roomCode: 'LAB201', bookings: 28, utilization: 72 },*/
   ];
 
   const getStatusBadge = (status: string) => {
@@ -463,7 +463,7 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
               <h2 className="text-lg font-semibold text-white">การดำเนินการด่วน</h2>
             </div>
-            <div className="p-6 space-y-3">
+            <div className="p-6 flex flex-col gap-5">
               <Link href="/admin/computers">
                 <Button variant="primary" className="w-full justify-start">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

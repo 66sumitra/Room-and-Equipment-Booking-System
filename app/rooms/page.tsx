@@ -19,11 +19,11 @@ export default function RoomsPage() {
   const sampleRooms = [
     {
       id: '1',
-      name: 'ห้องคอมพิวเตอร์ LAB501',
-      roomCode: 'LAB501',
+      name: 'ห้องคอมพิวเตอร์ 1-0303',
+      roomCode: '1-0303',
       roomType: 'computer_lab',
       building: 'อาคาร 1',
-      floor: '5',
+      floor: '3',
       department: 'ภาควิชาวิทยาการคอมพิวเตอร์',
       computerCount: 40,
       equipmentCount: 5,
@@ -31,17 +31,17 @@ export default function RoomsPage() {
     },
     {
       id: '2',
-      name: 'ห้องคอมพิวเตอร์ LAB502',
-      roomCode: 'LAB502',
+      name: 'ห้องคอมพิวเตอร์ 1-0103',
+      roomCode: '1-0103',
       roomType: 'computer_lab',
       building: 'อาคาร 1',
-      floor: '5',
+      floor: '3',
       department: 'ภาควิชาวิทยาการคอมพิวเตอร์',
       computerCount: 30,
       equipmentCount: 3,
       createdAt: '14/11/2025',
     },
-    {
+   /* {
       id: '3',
       name: 'ห้องแลบ LAB201',
       roomCode: 'LAB201',
@@ -52,7 +52,7 @@ export default function RoomsPage() {
       computerCount: 0,
       equipmentCount: 15,
       createdAt: '14/11/2025',
-    },
+    },*/
   ];
 
   const handleEdit = (room: any) => {
@@ -81,7 +81,7 @@ export default function RoomsPage() {
 
   return (
     <DashboardLayout
-      title="จัดการห้อง (Grouping)"
+      title="จัดการห้องคอมพิวเตอร์"
       actionButton={
         <Button
           variant="success"
@@ -100,8 +100,7 @@ export default function RoomsPage() {
       <div className="space-y-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>หมายเหตุ:</strong> ห้องใช้เป็น "กล่องรวม" สำหรับ grouping เท่านั้น ไม่มีการจองห้องทั้งห้อง
-            ผู้ใช้จะจองคอมพิวเตอร์แต่ละเครื่องในห้องแทน
+            <strong>หมายเหตุ:</strong> สามารถจองคอมพิวเตอร์ 1 เครื่อง ต่อ 1 คนเท่านั้น
           </p>
         </div>
 
