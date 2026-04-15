@@ -1,80 +1,10 @@
-<<<<<<< HEAD
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/Button';
-
-export default function UsersPage() {
-  return (
-    <DashboardLayout title="จัดการผู้ใช้งาน">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">รายชื่อผู้ใช้งาน</h2>
-          <Button variant="success" size="md">
-            <span className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              เพิ่มผู้ใช้งาน
-            </span>
-          </Button>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ชื่อ-นามสกุล
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  อีเมล
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  บทบาท
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  การดำเนินการ
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  เสย เสย
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  say@example.com
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    ผู้ดูแลระบบ
-                  </span>
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex gap-2">
-                    <button className="text-blue-600 hover:text-blue-900">
-                      แก้ไข
-                    </button>
-                    <button className="text-blue-600 hover:text-blue-900">
-                      ลบ
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-}
-
-=======
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
-import { supabase } from '@/lib/supabaseClient'; // เพิ่มการนำเข้า supabase เพื่อเช็ค session
+// ลบ import supabase ออกถ้าไม่ได้ใช้ส่วนอื่น เพื่อลดความสับสนครับ
+import Link from 'next/link';
 
 interface UserRow {
   id: string;
@@ -88,29 +18,25 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  // ใช้ useCallback เพื่อป้องกันการสร้างฟังก์ชันใหม่ซ้ำๆ
+  // ฟังก์ชันดึงข้อมูลผู้ใช้งาน
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       
-      // ตรวจสอบ Session ก่อนเรียก API
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        alert('เซสชันหมดอายุ กรุณาล็อกอินใหม่');
+      // ✅ แก้ไข: ไม่ต้องเช็ค supabase.auth.getSession() แล้ว
+      // เพราะเราใช้ระบบ JWT Cookie ของเราเอง
+      const res = await fetch('/api/users');
+
+      // ถ้า API ตอบกลับว่า 401 (Unauthorized) แสดงว่า Cookie หมดอายุจริงๆ
+      if (res.status === 401) {
+        alert('กรุณาล็อกอินใหม่เพื่อเข้าถึงหน้านี้ครับ');
         window.location.href = '/login';
         return;
       }
 
-      const res = await fetch('/api/users', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}` // ส่ง Token ไปด้วยถ้า API ตรวจสอบ
-        }
-      });
-
-      // ตรวจสอบว่าเป็น JSON หรือไม่ (แก้ปัญหา SyntaxError: Unexpected token '<')
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        throw new TypeError("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ไม่ใช่ JSON)");
+        throw new TypeError("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง");
       }
 
       const data = await res.json();
@@ -121,7 +47,7 @@ export default function UsersPage() {
       setUsers(data.users || []);
     } catch (error) {
       console.error(error);
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setLoading(false);
     }
@@ -131,6 +57,7 @@ export default function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  // ฟังก์ชันเปลี่ยนสิทธิ์ (Role)
   const handleRoleChange = async (user: UserRow, newRole: string) => {
     if (user.role === newRole) return;
     setSavingId(user.id);
@@ -155,6 +82,7 @@ export default function UsersPage() {
     }
   };
 
+  // ฟังก์ชันลบผู้ใช้งาน
   const handleDelete = async (user: UserRow) => {
     if (!confirm(`ยืนยันลบผู้ใช้ ${user.fullName || user.email} ?`)) return;
     setSavingId(user.id);
@@ -184,7 +112,7 @@ export default function UsersPage() {
             <h2 className="text-xl font-bold text-slate-800">รายชื่อผู้ใช้งานระบบ</h2>
             <p className="text-sm text-slate-500">จัดการสิทธิ์และข้อมูลผู้ใช้งานทั้งหมดในระบบ</p>
           </div>
-          <a href="/register">
+          <Link href="/register">
             <Button variant="primary" size="md" className="shadow-md">
               <span className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +121,7 @@ export default function UsersPage() {
                 เพิ่มผู้ใช้งานใหม่
               </span>
             </Button>
-          </a>
+          </Link>
         </div>
 
         {loading ? (
@@ -256,4 +184,3 @@ export default function UsersPage() {
     </DashboardLayout>
   );
 }
->>>>>>> d808a9b0e0b00575a7ff8903497b8130125c9d87

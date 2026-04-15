@@ -29,11 +29,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-<<<<<<< HEAD
-    name: 'จัดการห้องคอมพิวเตอร์',
-=======
-    name: 'จัดการห้อง',
->>>>>>> d808a9b0e0b00575a7ff8903497b8130125c9d87
+    name: 'จัดการห้องคอมพิวเตอร์', // ผมเหลือชื่อนี้ไว้ให้นะครับ หรือจะเปลี่ยนเป็น 'จัดการห้อง' ก็ได้
     href: '/rooms',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,15 +64,6 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
-  // {
-  //   name: 'เช็คอิน/เช็คเอาท์',
-  //   href: '/checkinout',
-  //   icon: (
-  //     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-  //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-  //     </svg>
-  //   ),
-  // },
   {
     name: 'รายงานการจอง',
     href: '/bookings',
@@ -155,4 +142,3 @@ export const Sidebar: React.FC = () => {
     </aside>
   );
 };
-

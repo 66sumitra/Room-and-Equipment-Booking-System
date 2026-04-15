@@ -1,132 +1,125 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useEffect, useState, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import Link from 'next/link';
 
-export default function UserManagementPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'user',
-  });
+interface UserRow {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+export default function UsersPage() {
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-    if (!formData.name?.trim() || !formData.email?.trim() || !formData.password?.trim()) {
-      alert('กรุณากรอกชื่อ อีเมล และรหัสผ่านให้ครบถ้วน');
-      return;
-    }
-
-    setLoading(true);
+  const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          password: formData.password,
-          role: formData.role,
-        }),
-      });
+      setLoading(true);
+      
+      // ✅ เราตัด supabase.auth.getSession() ออก 
+      // เพื่อให้ระบบเช็กผ่าน JWT Cookie ที่เราทำไว้ใน API แทน
+      const res = await fetch('/api/users');
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || 'ไม่สามารถเพิ่มผู้ใช้งานได้');
+      // ตรวจสอบว่าถ้า API บอกว่าไม่มีสิทธิ์ (401) ค่อยเด้งไปหน้า Login
+      if (res.status === 401) {
+        alert('กรุณาล็อกอินใหม่เพื่อความปลอดภัยครับ');
+        window.location.href = '/login';
         return;
       }
 
-      alert('เพิ่มผู้ใช้งานสำเร็จ');
-      router.push('/users');
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new TypeError("เซิร์ฟเวอร์ตอบกลับผิดพลาด (ไม่ใช่ JSON)");
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || 'ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+        return;
+      }
+      setUsers(data.users || []);
     } catch (error) {
-      console.error(error);
-      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      console.error("Fetch Users Error:", error);
+      alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  // ฟังก์ชันลบผู้ใช้
+  const handleDelete = async (user: UserRow) => {
+    if (!confirm(`ยืนยันลบผู้ใช้ ${user.fullName || user.email} ?`)) return;
+    setSavingId(user.id);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        alert('ลบผู้ใช้เรียบร้อยแล้ว');
+      }
+    } catch (error) {
+      alert('ลบไม่สำเร็จ');
+    } finally {
+      setSavingId(null);
     }
   };
 
   return (
-    <DashboardLayout title="เพิ่มผู้ใช้งาน">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-xl">
-        <div className="mb-6">
-          <Link
-            href="/users"
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            กลับไปหน้ารายชื่อผู้ใช้งาน
+    <DashboardLayout title="จัดการผู้ใช้งาน">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">รายชื่อผู้ใช้งานระบบ</h2>
+            <p className="text-sm text-slate-500">จัดการสิทธิ์และข้อมูลผู้ใช้งานทั้งหมดในระบบ</p>
+          </div>
+          <Link href="/register">
+            <Button variant="primary" size="md">เพิ่มผู้ใช้งานใหม่</Button>
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="ชื่อ-นามสกุล"
-            placeholder="กรุณากรอกชื่อ นามสกุล"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-
-          <Input
-            label="อีเมล"
-            type="email"
-            placeholder="กรุณากรอกอีเมล"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-          />
-
-          <Input
-            label="รหัสผ่าน"
-            type="password"
-            placeholder="กรุณากรอกรหัสผ่าน"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              บทบาท
-            </label>
-            <select
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            >
-              <option value="user">ผู้ใช้งานทั่วไป</option>
-              <option value="admin">ผู้ดูแลระบบ</option>
-            </select>
+        {loading ? (
+          <div className="py-20 text-center">
+             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
+             <p className="text-slate-500 font-medium">กำลังโหลดข้อมูลผู้ใช้...</p>
           </div>
-
-          <div className="flex gap-3 pt-4">
-            <Link href="/users">
-              <Button type="button" variant="secondary" size="md">
-                ยกเลิก
-              </Button>
-            </Link>
-            <Button
-              type="submit"
-              variant="success"
-              size="md"
-              disabled={loading}
-            >
-              {loading ? 'กำลังบันทึก...' : 'บันทึก'}
-            </Button>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">ชื่อ-นามสกุล</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">อีเมล</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">บทบาท</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {users.map((user) => (
+                  <tr key={user.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm font-medium">{user.fullName || 'ไม่ได้ระบุ'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600 font-mono">{user.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs font-bold rounded ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {user.role === 'admin' ? 'ADMIN' : 'USER'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => handleDelete(user)} className="text-red-500 hover:text-red-700 text-sm font-bold">ลบ</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </form>
+        )}
       </div>
     </DashboardLayout>
   );
