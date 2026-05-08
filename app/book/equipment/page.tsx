@@ -97,7 +97,7 @@ export default function BookEquipmentPage() {
             <div className="flex items-center gap-4">
               <Link href="/user/my-bookings">
                 <Button variant="secondary" size="md">
-                  การจองของฉัน
+                  ประวัติการจองของฉัน
                 </Button>
               </Link>
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">

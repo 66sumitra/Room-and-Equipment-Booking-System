@@ -1,44 +1,30 @@
-<<<<<<< HEAD
-import { RegisterForm } from '@/components/forms/RegisterForm';
-
-export default function RegisterPage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-teal-50 to-green-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-teal-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
-      </div>
-      
-      {/* Content */}
-      <div className="relative z-10 w-full">
-        <RegisterForm />
-      </div>
-    </div>
-  );
-}
-
-=======
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle2, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    fullName: '',
+    fullName: '', // 👈 ตัวแปรชื่อ fullName
     email: '',
     password: '',
     confirmPassword: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     
     if (formData.password !== formData.confirmPassword) {
-      return alert('รหัสผ่านไม่ตรงกัน');
+      setLoading(false);
+      return setError('รหัสผ่านไม่ตรงกัน');
     }
 
     try {
@@ -46,7 +32,7 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: formData.fullName,
+          name: formData.fullName, // ✅ แก้จาก formData.name เป็น formData.fullName
           email: formData.email,
           password: formData.password,
         }),
@@ -55,29 +41,41 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // ถ้าอีเมลถูกใช้แล้ว ให้เด้งไปหน้า Login เลย
-        if (data.message === 'อีเมลนี้ถูกใช้สมัครแล้ว กรุณาเข้าสู่ระบบ') {
-          alert(data.message);
-          router.push('/login');
-          return;
-        }
-
-        alert(data.message || 'ไม่สามารถสร้างบัญชีได้');
+        setLoading(false);
+        setError(data.message || 'ไม่สามารถสร้างบัญชีได้');
         return;
       }
 
-      alert('สร้างบัญชีสำเร็จแล้ว!');
-      router.push('/login');
+      // ✨ สมัครสำเร็จ: โชว์ติ๊กถูกเด้งๆ 1.5 วิ แล้ววาร์ป
+      setIsSuccess(true);
+      
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
+
     } catch (error) {
-      console.error(error);
-      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      setLoading(false);
+      setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
     }
   };
 
   return (
     <div className="min-h-screen bg-cyan-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden">
-        {/* ส่วนหัวสีฟ้า-เขียวเหมือนในรูป */}
+      
+      {/* 🟢 Success Overlay */}
+      {isSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-md">
+          <div className="bg-white p-12 rounded-3xl shadow-2xl border border-emerald-100 text-center scale-110 transition-all">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full mb-4 animate-bounce">
+              <CheckCircle2 size={48} />
+            </div>
+            <h2 className="text-2xl font-black text-gray-800">สมัครสมาชิกสำเร็จ!</h2>
+            <p className="text-gray-500 font-bold mt-2">กำลังพาไปหน้าเข้าสู่ระบบ...</p>
+          </div>
+        </div>
+      )}
+
+      <div className={`bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden transition-all duration-500 ${isSuccess ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
         <div className="bg-gradient-to-r from-blue-500 to-emerald-400 p-8 text-center text-white">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
@@ -87,40 +85,49 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleRegister} className="p-8 space-y-4 font-bold">
+          {error && (
+            <div className="bg-red-50 text-red-500 p-3 rounded-xl text-xs text-center border border-red-100">
+              {error}
+            </div>
+          )}
+
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">ชื่อ-นามสกุล</label>
-            <input type="text" placeholder="กรุณากรอกชื่อ นามสกุล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black" 
+            <input type="text" placeholder="กรุณากรอกชื่อ นามสกุล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold" 
               onChange={(e) => setFormData({...formData, fullName: e.target.value})} required />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">อีเมล</label>
-            <input type="email" placeholder="กรุณากรอกอีเมล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black"
+            <input type="email" placeholder="กรุณากรอกอีเมล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
               onChange={(e) => setFormData({...formData, email: e.target.value})} required />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">รหัสผ่าน</label>
-            <input type="password" placeholder="กรุณากรอกรหัสผ่าน" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black"
+            <input type="password" placeholder="กรุณากรอกรหัสผ่าน" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
               onChange={(e) => setFormData({...formData, password: e.target.value})} required />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">ยืนยันรหัสผ่าน</label>
-            <input type="password" placeholder="กรุณากรอกรหัสผ่านอีกครั้ง" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black"
+            <input type="password" placeholder="กรุณากรอกรหัสผ่านอีกครั้ง" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
               onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} required />
           </div>
 
-          <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-emerald-500 text-white py-4 rounded-xl font-black shadow-lg hover:opacity-90 transition-all mt-4">
-            สมัครสมาชิก →
+          <button 
+            type="submit" 
+            disabled={loading || isSuccess}
+            className="w-full bg-gradient-to-r from-blue-600 to-emerald-500 text-white py-4 rounded-xl font-black shadow-lg hover:opacity-90 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : 'สมัครสมาชิก →'}
           </button>
 
           <p className="text-center text-xs text-gray-500 mt-6">
-            มีบัญชีอยู่แล้ว? <a href="/login" className="text-red-500 font-black">เข้าสู่ระบบ</a>
+            มีบัญชีอยู่แล้ว? <Link href="/login" className="text-red-500 font-black hover:underline">เข้าสู่ระบบ</Link>
           </p>
         </form>
       </div>
     </div>
   );
 }
->>>>>>> d808a9b0e0b00575a7ff8903497b8130125c9d87

@@ -1,386 +1,525 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabaseClient';
+import {
+  CheckCircle2,
+  Clock,
+  RotateCcw,
+  Package,
+  Monitor,
+  AlertCircle,
+} from 'lucide-react';
 
 export default function MyBookingsPage() {
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'computer' | 'equipment'>('computer');
+  const [approvedBookings, setApprovedBookings] = useState<any[]>([]);
+  const [returnPendingBookings, setReturnPendingBookings] = useState<any[]>([]);
+  const [returnedBookings, setReturnedBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
 
-  const computerBookings = [
-    {
-      id: '1',
-      type: 'computer',
-      itemName: 'LAB501-PC03',
-      itemCode: 'LAB501-PC03',
-      roomCode: 'LAB501',
-      date: '2025-12-15',
-      startTime: '09:00',
-      endTime: '12:00',
-      purpose: 'ทำรายงาน',
-      status: 'approved',
-      createdAt: '2025-12-10',
-    },
-    {
-      id: '2',
-      type: 'computer',
-      itemName: 'LAB502-PC15',
-      itemCode: 'LAB502-PC15',
-      roomCode: 'LAB502',
-      date: '2025-12-16',
-      startTime: '14:00',
-      endTime: '17:00',
-      purpose: 'coding',
-      status: 'pending',
-      createdAt: '2025-12-11',
-    },
-    {
-      id: '3',
-      type: 'computer',
-      itemName: 'LAB501-PC20',
-      itemCode: 'LAB501-PC20',
-      roomCode: 'LAB501',
-      date: '2025-12-20',
-      startTime: '10:00',
-      endTime: '15:00',
-      purpose: 'ทำโปรเจค',
-      status: 'completed',
-      createdAt: '2025-12-12',
-    },
-  ];
+  const [popup, setPopup] = useState<{
+    open: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
-  const equipmentBookings = [
-    {
-      id: '1',
-      type: 'equipment',
-      itemName: 'โน๊ตบุ๊ค Dell',
-      itemCode: 'ASSET-001',
-      roomCode: 'LAB201',
-      dateStart: '2025-12-15',
-      dateEnd: '2025-12-16',
-      purpose: 'นำเสนอโปรเจค',
-      status: 'borrowed',
-      createdAt: '2025-12-10',
-    },
-    {
-      id: '2',
-      type: 'equipment',
-      itemName: 'กล้อง Canon EOS R6',
-      itemCode: 'ASSET-002',
-      roomCode: 'LAB201',
-      dateStart: '2025-12-18',
-      dateEnd: '2025-12-20',
-      purpose: 'ถ่ายภาพงาน',
-      status: 'pending',
-      createdAt: '2025-12-11',
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    let realtimeChannel: any = null;
 
-  const myBookings = activeTab === 'computer' ? computerBookings : equipmentBookings;
+    const initPage = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      approved: 'bg-green-100 text-green-700',
-      pending: 'bg-yellow-100 text-yellow-700',
-      rejected: 'bg-red-100 text-red-700',
-      completed: 'bg-blue-100 text-blue-700',
-      borrowed: 'bg-orange-100 text-orange-700',
-      returned: 'bg-gray-100 text-gray-700',
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const userEmail = user.email || '';
+
+      if (!isMounted) return;
+      setCurrentUserEmail(userEmail);
+
+      await fetchBookings(userEmail);
+
+      if (!isMounted) return;
+
+      const channelName = `my-bookings-realtime-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}`;
+
+      realtimeChannel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'borrow_requests' },
+          async () => {
+            if (!isMounted) return;
+            await fetchBookings(userEmail);
+          }
+        )
+        .subscribe();
     };
-    const labels = {
-      approved: 'อนุมัติแล้ว',
-      pending: 'รออนุมัติ',
-      rejected: 'ไม่อนุมัติ',
-      completed: 'ใช้งานแล้ว',
-      borrowed: 'กำลังยืม',
-      returned: 'คืนแล้ว',
+
+    initPage();
+
+    return () => {
+      isMounted = false;
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
     };
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'}`}>
-        {labels[status as keyof typeof labels] || status}
-      </span>
+  }, []);
+
+  const showPopup = (
+    type: 'success' | 'error',
+    title: string,
+    message: string
+  ) => {
+    setPopup({
+      open: true,
+      type,
+      title,
+      message,
+    });
+
+    setTimeout(() => {
+      setPopup((prev) => ({
+        ...prev,
+        open: false,
+      }));
+    }, 2200);
+  };
+
+  const fetchBookings = async (userEmail: string) => {
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from('borrow_requests')
+        .select(`
+          id,
+          status,
+          request_type,
+          created_at,
+          borrow_date,
+          return_date,
+          equipment_id,
+          computer_id,
+          reason,
+          approved_at,
+          returned_at,
+          user_email
+        `)
+        .eq('user_email', userEmail)
+        .in('status', ['approved', 'return_pending', 'returned'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const rows = data || [];
+
+      const equipmentIds = Array.from(
+        new Set(
+          rows
+            .filter((item) => item.request_type === 'equipment' && item.equipment_id)
+            .map((item) => item.equipment_id)
+        )
+      );
+
+      const computerIds = Array.from(
+        new Set(
+          rows
+            .filter((item) => item.request_type === 'computer' && item.computer_id !== null)
+            .map((item) => item.computer_id)
+        )
+      );
+
+      let equipmentMap = new Map();
+      let computerMap = new Map();
+
+      if (equipmentIds.length > 0) {
+        const { data: equipmentData, error: equipmentError } = await supabase
+          .from('equipment')
+          .select('id, name, category')
+          .in('id', equipmentIds);
+
+        if (equipmentError) throw equipmentError;
+
+        equipmentMap = new Map((equipmentData || []).map((item) => [item.id, item]));
+      }
+
+      if (computerIds.length > 0) {
+        const { data: computerData, error: computerError } = await supabase
+          .from('computers')
+          .select('id, pc_name, room_name')
+          .in('id', computerIds);
+
+        if (computerError) throw computerError;
+
+        computerMap = new Map((computerData || []).map((item) => [item.id, item]));
+      }
+
+      const mergedRows = rows.map((item) => ({
+        ...item,
+        equipment:
+          item.request_type === 'equipment'
+            ? equipmentMap.get(item.equipment_id) || null
+            : null,
+        computers:
+          item.request_type === 'computer'
+            ? computerMap.get(item.computer_id) || null
+            : null,
+      }));
+
+      setApprovedBookings(mergedRows.filter((item) => item.status === 'approved'));
+      setReturnPendingBookings(
+        mergedRows.filter((item) => item.status === 'return_pending')
+      );
+      setReturnedBookings(mergedRows.filter((item) => item.status === 'returned'));
+    } catch (error: any) {
+      console.error('fetchBookings error:', error.message);
+      setApprovedBookings([]);
+      setReturnPendingBookings([]);
+      setReturnedBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRequestTitle = (item: any) => {
+    if (item?.request_type === 'computer') {
+      return item.computers?.pc_name || 'ไม่ระบุคอมพิวเตอร์';
+    }
+    return item.equipment?.name || 'ไม่ระบุอุปกรณ์';
+  };
+
+  const getRequestSubtitle = (item: any) => {
+    if (item?.request_type === 'computer') {
+      return item.computers?.room_name || 'ไม่ระบุห้อง';
+    }
+    return item.equipment?.category || 'ไม่ระบุหมวดหมู่';
+  };
+
+  const handleRequestReturn = async (item: any) => {
+    try {
+      const { error } = await supabase
+        .from('borrow_requests')
+        .update({ status: 'return_pending' })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      const itemName = getRequestTitle(item);
+      const userEmail = item.user_email || currentUserEmail;
+
+      const { data: admins, error: adminError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('role', 'admin');
+
+      if (!adminError && admins && admins.length > 0) {
+        await supabase.from('notifications').insert(
+          admins
+            .filter((admin) => admin.email)
+            .map((admin) => ({
+              user_email: admin.email,
+              title: 'มีคำขอคืนใหม่',
+              message: `${userEmail} ได้ส่งคำขอคืน ${itemName}`,
+              type: 'return_requested',
+              related_request_id: item.id,
+            }))
+        );
+      }
+
+      if (userEmail) {
+        await supabase.from('notifications').insert([
+          {
+            user_email: userEmail,
+            title: 'ส่งคำขอคืนสำเร็จ',
+            message: `คุณได้ส่งคำขอคืน ${itemName} แล้ว กรุณารอแอดมินยืนยันรับคืน`,
+            type: 'return_requested',
+            related_request_id: item.id,
+          },
+        ]);
+      }
+
+      showPopup(
+        'success',
+        'แจ้งคืนสำเร็จ',
+        item.request_type === 'computer'
+          ? 'แจ้งคืนคอมพิวเตอร์เรียบร้อยแล้ว กรุณารอแอดมินยืนยันรับคืน'
+          : 'แจ้งคืนอุปกรณ์เรียบร้อยแล้ว กรุณารอแอดมินยืนยันรับคืน'
+      );
+
+      fetchBookings(currentUserEmail);
+    } catch (error: any) {
+      showPopup('error', 'เกิดข้อผิดพลาด', error.message);
+    }
+  };
+
+  const getRequestIcon = (item: any) => {
+    return item?.request_type === 'computer' ? (
+      <Monitor size={24} />
+    ) : (
+      <Package size={24} />
     );
   };
 
-  const handleViewDetail = (booking: any) => {
-    setSelectedBooking(booking);
-    setIsDetailModalOpen(true);
+  const getRequestButtonText = (item: any) => {
+    return item?.request_type === 'computer' ? 'แจ้งคืนคอมพิวเตอร์' : 'แจ้งคืนอุปกรณ์';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-teal-50 to-green-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">ประวัติการจองของฉัน</h1>
-              <p className="text-sm text-gray-500 mt-1">ดูและจัดการการจองทั้งหมดของคุณ</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link href="/book/computer">
-                <Button variant="primary" size="md">
-                  <span className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                    </svg>
-                    จองคอม
-                  </span>
-                </Button>
-              </Link>
-              <Link href="/book/equipment">
-                <Button variant="secondary" size="md">
-                  <span className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    จองอุปกรณ์
-                  </span>
-                </Button>
-              </Link>
-              <div className="w-10 h-10 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold">
-                ผ
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">การจองทั้งหมด</p>
-                <p className="text-3xl font-bold text-gray-800 mt-2">{myBookings.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">รออนุมัติ</p>
-                <p className="text-3xl font-bold text-gray-800 mt-2">
-                  {myBookings.filter(b => b.status === 'pending').length}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">อนุมัติแล้ว</p>
-                <p className="text-3xl font-bold text-gray-800 mt-2">
-                  {myBookings.filter(b => b.status === 'approved').length}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
+    <DashboardLayout
+      title="รายการยืมของฉัน"
+      actionButton={
+        <Link href="/user/booking">
+          <Button className="rounded-xl bg-slate-800 px-5 py-3 text-sm font-black text-white">
+            กลับไปหน้าขอยืม
+          </Button>
+        </Link>
+      }
+    >
+      <div className="space-y-8 pb-20">
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-xl shadow-slate-100/50">
+          <h2 className="text-xl font-black text-slate-800">รายการที่กำลังใช้งานอยู่</h2>
+          <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            รายการที่อนุมัติแล้วและยังไม่แจ้งคืน
+          </p>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('computer')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                activeTab === 'computer'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              จองคอม ({computerBookings.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('equipment')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                activeTab === 'equipment'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              จองอุปกรณ์ ({equipmentBookings.length})
-            </button>
-          </div>
-        </div>
-
-        {/* Bookings List */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">
-              {activeTab === 'computer' ? 'การจองคอมพิวเตอร์' : 'การจองอุปกรณ์'}
-            </h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {myBookings.map((booking) => (
+        <div className="space-y-4">
+          {loading ? (
+            <div className="rounded-[2rem] border border-slate-100 bg-white p-10 text-center font-bold text-slate-400">
+              กำลังโหลดข้อมูล...
+            </div>
+          ) : approvedBookings.length > 0 ? (
+            approvedBookings.map((item) => (
               <div
-                key={booking.id}
-                className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={() => handleViewDetail(booking)}
+                key={item.id}
+                className="flex items-center justify-between rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-800">{booking.itemName}</h3>
-                      {getStatusBadge(booking.status)}
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                      item.request_type === 'computer'
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'bg-indigo-50 text-indigo-600'
+                    }`}
+                  >
+                    {getRequestIcon(item)}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-black text-slate-800">
+                        {getRequestTitle(item)}
+                      </p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                          item.request_type === 'computer'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+                      </span>
                     </div>
-                    {activeTab === 'computer' ? (
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="font-mono text-blue-600">{booking.itemCode}</span>
-                        <span className="text-gray-400">•</span>
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          {'date' in booking ? booking.date : ''}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {'startTime' in booking ? booking.startTime : ''} - {'endTime' in booking ? booking.endTime : ''}
-                        </span>
-                        <span className="text-gray-400">•</span>
-                        <span>{booking.purpose}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="font-mono text-blue-600">{booking.itemCode}</span>
-                        <span className="text-gray-400">•</span>
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          {'dateStart' in booking ? booking.dateStart : ''} - {'dateEnd' in booking ? booking.dateEnd : ''}
-                        </span>
-                        <span className="text-gray-400">•</span>
-                        <span>{booking.purpose}</span>
-                      </div>
+
+                    <p className="mt-1 text-[13px] font-bold uppercase tracking-widest text-slate-400">
+                      {getRequestSubtitle(item)}
+                    </p>
+
+                    <p className="mt-1 text-[13px] font-bold text-slate-500">
+                      วันที่ยืม: {item.borrow_date || 'ไม่ระบุ'}
+                    </p>
+
+                    {item.reason && (
+                      <p className="mt-1 text-[13px] text-slate-400">
+                        เหตุผล: {item.reason}
+                      </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-2xl ${booking.type === 'computer' ? '💻' : '📦'}`}></span>
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
 
-      {/* Detail Modal */}
-      <Modal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        title="รายละเอียดการจอง"
-        size="lg"
-      >
-        {selectedBooking && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-800">{selectedBooking.itemName}</h3>
-                {getStatusBadge(selectedBooking.status)}
-              </div>
-              <p className="text-sm text-gray-600">{selectedBooking.topic}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {selectedBooking.type === 'computer' ? (
-                <>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">รหัสเครื่อง</p>
-                    <p className="font-mono font-semibold text-gray-800">{selectedBooking.itemCode}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">ห้อง</p>
-                    <p className="font-semibold text-gray-800">{selectedBooking.roomCode}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">วันที่</p>
-                    <p className="font-semibold text-gray-800">{'date' in selectedBooking ? selectedBooking.date : ''}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">เวลา</p>
-                    <p className="font-semibold text-gray-800">
-                      {'startTime' in selectedBooking ? selectedBooking.startTime : ''} - {'endTime' in selectedBooking ? selectedBooking.endTime : ''}
-                    </p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-500 mb-1">วัตถุประสงค์</p>
-                    <p className="font-semibold text-gray-800">{selectedBooking.purpose}</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">รหัสอุปกรณ์</p>
-                    <p className="font-mono font-semibold text-gray-800">{selectedBooking.itemCode}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">ห้อง/จุดรับ</p>
-                    <p className="font-semibold text-gray-800">{selectedBooking.roomCode}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">วันที่รับ</p>
-                    <p className="font-semibold text-gray-800">{'dateStart' in selectedBooking ? selectedBooking.dateStart : ''}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">วันที่คืน</p>
-                    <p className="font-semibold text-gray-800">{'dateEnd' in selectedBooking ? selectedBooking.dateEnd : ''}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-500 mb-1">วัตถุประสงค์</p>
-                    <p className="font-semibold text-gray-800">{selectedBooking.purpose}</p>
-                  </div>
-                </>
-              )}
-              <div>
-                <p className="text-sm text-gray-500 mb-1">วันที่จอง</p>
-                <p className="font-semibold text-gray-800">{selectedBooking.createdAt}</p>
-              </div>
-            </div>
-
-            {(selectedBooking.status === 'pending' || selectedBooking.status === 'approved') && (
-              <div className="pt-4 border-t">
                 <Button
-                  variant="danger"
-                  className="w-full"
-                  onClick={() => {
-                    alert('ยกเลิกการจองเรียบร้อย');
-                    setIsDetailModalOpen(false);
-                  }}
+                  className="rounded-xl bg-red-500 px-5 py-3 text-sm font-black uppercase text-white shadow-lg shadow-red-100"
+                  onClick={() => handleRequestReturn(item)}
                 >
-                  ยกเลิกการจอง
+                  {getRequestButtonText(item)}
                 </Button>
               </div>
+            ))
+          ) : (
+            <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+              <CheckCircle2 size={36} className="mx-auto mb-2 text-slate-300" />
+              <p className="text-sm font-bold italic text-slate-400">
+                ไม่มีรายการที่กำลังใช้งานอยู่
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-[2rem] border border-amber-100 bg-amber-50/50 p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+              <RotateCcw size={22} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-slate-800">รายการที่แจ้งคืนแล้ว</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                รอแอดมินยืนยันรับคืน
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {returnPendingBookings.length > 0 ? (
+              returnPendingBookings.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white p-4"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-black text-slate-800">
+                        {getRequestTitle(item)}
+                      </p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
+                          item.request_type === 'computer'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      {getRequestSubtitle(item)}
+                    </p>
+
+                    <p className="mt-1 text-[13px] font-bold text-slate-500">
+                      วันที่กำหนดคืน: {item.return_date || 'ไม่ระบุ'}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black text-amber-700">
+                    รอรับคืน
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm font-bold text-slate-400">ไม่มีรายการรอรับคืน</p>
             )}
           </div>
-        )}
-      </Modal>
-    </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50/50 p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+              <Clock size={22} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-slate-800">ประวัติการคืนแล้ว</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                รายการที่แอดมินยืนยันรับคืนเรียบร้อย
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {returnedBookings.length > 0 ? (
+              returnedBookings.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-white p-4"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-black text-slate-800">
+                        {getRequestTitle(item)}
+                      </p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
+                          item.request_type === 'computer'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      {getRequestSubtitle(item)}
+                    </p>
+
+                    <p className="mt-1 text-[11px] font-bold text-slate-500">
+                      วันที่คืนสำเร็จ: {item.returned_at || 'ไม่ระบุ'}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
+                    คืนแล้ว
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm font-bold text-slate-400">ยังไม่มีประวัติคืนรายการ</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {popup.open && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-4 pt-8">
+          <div
+            className={`w-full max-w-md rounded-2xl border px-5 py-4 shadow-2xl backdrop-blur-sm transition-all duration-300 ${
+              popup.type === 'success'
+                ? 'border-emerald-100 bg-white text-slate-800'
+                : 'border-red-100 bg-white text-slate-800'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={`mt-0.5 flex h-11 w-11 items-center justify-center rounded-full ${
+                  popup.type === 'success'
+                    ? 'bg-emerald-100 text-emerald-600'
+                    : 'bg-red-100 text-red-600'
+                }`}
+              >
+                {popup.type === 'success' ? (
+                  <CheckCircle2 size={22} />
+                ) : (
+                  <AlertCircle size={22} />
+                )}
+              </div>
+
+              <div className="flex-1">
+                <h3 className="text-sm font-black text-slate-800">{popup.title}</h3>
+                <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
+                  {popup.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </DashboardLayout>
   );
 }
-

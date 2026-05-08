@@ -59,15 +59,11 @@ export default function BookComputerPage() {
             <div className="flex items-center gap-4">
               <Link href="/user/my-bookings">
                 <Button variant="secondary" size="md">
-                  การจองของฉัน
+                  ประวัติการจองของฉัน
                 </Button>
               </Link>
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-<<<<<<< HEAD
-                ผ
-=======
-                
->>>>>>> d808a9b0e0b00575a7ff8903497b8130125c9d87
+
               </div>
             </div>
           </div>
