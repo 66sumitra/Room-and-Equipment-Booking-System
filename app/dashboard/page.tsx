@@ -56,7 +56,12 @@ export default function DashboardPage() {
       return item.computers?.pc_name || item.item_name || 'คำขอใช้คอมพิวเตอร์';
     }
 
-    return item.equipment?.name || item.item_name || item.equipment_name || 'คำขอยืมอุปกรณ์';
+    return (
+      item.equipment?.name ||
+      item.item_name ||
+      item.equipment_name ||
+      'คำขอยืมอุปกรณ์'
+    );
   };
 
   const getUserDisplayName = (item: Booking) => {
@@ -93,10 +98,13 @@ export default function DashboardPage() {
   };
 
   const getStatusStyle = (status?: string | null) => {
-    if (status === 'approved') return 'border-emerald-100 bg-emerald-50 text-emerald-600';
+    if (status === 'approved')
+      return 'border-emerald-100 bg-emerald-50 text-emerald-600';
     if (status === 'rejected') return 'border-rose-100 bg-rose-50 text-rose-600';
-    if (status === 'returned' || status === 'completed') return 'border-blue-100 bg-blue-50 text-blue-600';
-    if (isReturnPendingStatus(status)) return 'border-orange-100 bg-orange-50 text-orange-600';
+    if (status === 'returned' || status === 'completed')
+      return 'border-blue-100 bg-blue-50 text-blue-600';
+    if (isReturnPendingStatus(status))
+      return 'border-orange-100 bg-orange-50 text-orange-600';
     if (status === 'overdue') return 'border-red-100 bg-red-50 text-red-600';
 
     return 'border-amber-100 bg-amber-50 text-amber-600';
@@ -147,8 +155,12 @@ export default function DashboardPage() {
       const recent = (recentRes.data ?? []) as Booking[];
       const allRequests = (allRequestsRes.data ?? []) as Booking[];
 
-      const pendingRequests = allRequests.filter((item) => isPendingStatus(item.status));
-      const returnPendingRequests = allRequests.filter((item) => isReturnPendingStatus(item.status));
+      const pendingRequests = allRequests.filter((item) =>
+        isPendingStatus(item.status)
+      );
+      const returnPendingRequests = allRequests.filter((item) =>
+        isReturnPendingStatus(item.status)
+      );
 
       const urgentPending = pendingRequests.filter((item) => item.urgent === true);
       const normalPending = pendingRequests.filter((item) => item.urgent !== true);
@@ -160,7 +172,9 @@ export default function DashboardPage() {
 
           if (urgentA !== urgentB) return urgentB - urgentA;
 
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
         })
         .slice(0, 5);
 
@@ -168,8 +182,11 @@ export default function DashboardPage() {
         totalRooms: 5,
         totalComputers: computers.length,
         available: computers.filter((c: any) => c.status === 'available').length,
-        booked: computers.filter((c: any) => c.status === 'booked' || c.status === 'busy').length,
-        maintenance: computers.filter((c: any) => c.status === 'maintenance').length,
+        booked: computers.filter(
+          (c: any) => c.status === 'booked' || c.status === 'busy'
+        ).length,
+        maintenance: computers.filter((c: any) => c.status === 'maintenance')
+          .length,
         pendingCount: pendingRequests.length,
         returnPendingCount: returnPendingRequests.length,
         urgentPendingCount: urgentPending.length,
@@ -198,9 +215,21 @@ export default function DashboardPage() {
 
     const channel = supabase
       .channel('dashboard-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'borrow_requests' }, fetchDashboardData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'computers' }, fetchDashboardData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment' }, fetchDashboardData)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'borrow_requests' },
+        fetchDashboardData
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'computers' },
+        fetchDashboardData
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'equipment' },
+        fetchDashboardData
+      )
       .subscribe();
 
     return () => {
@@ -211,30 +240,31 @@ export default function DashboardPage() {
   return (
     <DashboardLayout title="Admin Dashboard" allowedRoles={['admin']}>
       {loading ? (
-        <div className="flex h-96 items-center justify-center">
+        <div className="flex h-80 items-center justify-center">
           <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-blue-600"></div>
         </div>
       ) : (
-        <div className="animate-in space-y-8 fade-in duration-500">
+        <div className="animate-in space-y-6 pb-20 fade-in duration-500 md:space-y-8">
           {stats.urgentPendingCount > 0 && (
-            <div className="rounded-[2rem] border border-red-100 bg-gradient-to-r from-red-50 to-white p-6 shadow-xl shadow-red-100/50">
+            <div className="rounded-[1.7rem] border border-red-100 bg-gradient-to-r from-red-50 to-white p-4 shadow-xl shadow-red-100/50 md:rounded-[2rem] md:p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 animate-pulse items-center justify-center rounded-2xl bg-red-600 text-white shadow-lg">
-                    <AlertCircle size={24} />
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="flex h-11 w-11 shrink-0 animate-pulse items-center justify-center rounded-2xl bg-red-600 text-white shadow-lg md:h-12 md:w-12">
+                    <AlertCircle size={22} />
                   </div>
+
                   <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-red-600">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-red-600 md:text-xs">
                       High Priority Alert
                     </p>
-                    <h2 className="text-xl font-black text-slate-800">
+                    <h2 className="text-base font-black text-slate-800 md:text-xl">
                       พบคำขอเร่งด่วน {stats.urgentPendingCount} รายการ
                     </h2>
                   </div>
                 </div>
 
                 <Link href="/approvals">
-                  <button className="rounded-2xl bg-red-600 px-8 py-3 text-sm font-black text-white shadow-lg shadow-red-200 transition-all hover:bg-red-700 active:scale-95">
+                  <button className="w-full rounded-2xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-200 transition-all hover:bg-red-700 active:scale-95 md:w-auto md:px-8">
                     จัดการทันที
                   </button>
                 </Link>
@@ -242,41 +272,79 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
-            <StatBox title="ห้องทั้งหมด" value={stats.totalRooms} color="blue" icon={<LayoutDashboard size={16} />} />
-            <StatBox title="คอมพิวเตอร์" value={stats.totalComputers} color="teal" icon={<Monitor size={16} />} />
-            <StatBox title="พร้อมใช้" value={stats.available} color="green" icon={<CheckCircle2 size={16} />} />
-            <StatBox title="รออนุมัติ" value={stats.pendingCount} color="amber" icon={<Clock size={16} />} isHighlight />
-            <StatBox title="รอรับคืน" value={stats.returnPendingCount} color="orange" icon={<RotateCcw size={16} />} isHighlight />
-            <StatBox title="คำขอด่วน" value={stats.urgentPendingCount} color="red" icon={<AlertCircle size={16} />} isHighlight />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+            <StatBox
+              title="ห้องทั้งหมด"
+              value={stats.totalRooms}
+              color="blue"
+              icon={<LayoutDashboard size={15} />}
+            />
+            <StatBox
+              title="คอมพิวเตอร์"
+              value={stats.totalComputers}
+              color="teal"
+              icon={<Monitor size={15} />}
+            />
+            <StatBox
+              title="พร้อมใช้"
+              value={stats.available}
+              color="green"
+              icon={<CheckCircle2 size={15} />}
+            />
+            <StatBox
+              title="รออนุมัติ"
+              value={stats.pendingCount}
+              color="amber"
+              icon={<Clock size={15} />}
+              isHighlight
+            />
+            <StatBox
+              title="รอรับคืน"
+              value={stats.returnPendingCount}
+              color="orange"
+              icon={<RotateCcw size={15} />}
+              isHighlight
+            />
+            <StatBox
+              title="คำขอด่วน"
+              value={stats.urgentPendingCount}
+              color="red"
+              icon={<AlertCircle size={15} />}
+              isHighlight
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
             <div className="space-y-4 lg:col-span-2">
-              <div className="flex items-center justify-between px-2">
-                <h2 className="flex items-center gap-2 text-lg font-black text-slate-800">
+              <div className="flex items-center justify-between px-1 md:px-2">
+                <h2 className="flex items-center gap-2 text-lg font-black text-slate-800 md:text-xl">
                   <span className="h-2 w-2 rounded-full bg-blue-600"></span>
                   ประวัติการจองล่าสุด
                 </h2>
 
-                <Link href="/bookings" className="text-xs font-bold uppercase tracking-tighter text-blue-600 hover:underline">
+                <Link
+                  href="/bookings"
+                  className="text-xs font-black text-blue-600 hover:underline"
+                >
                   ดูทั้งหมด
                 </Link>
               </div>
 
-              <div className="space-y-3 rounded-[2.5rem] border border-slate-100 bg-white p-4 shadow-sm">
+              <div className="space-y-3 rounded-[2rem] border border-slate-100 bg-white p-3 shadow-sm md:rounded-[2.5rem] md:p-4">
                 {recentBookings.length > 0 ? (
                   recentBookings.map((b) => (
                     <div
                       key={b.id}
-                      className={`group rounded-3xl border p-4 transition-all hover:shadow-md ${
-                        b.urgent ? 'border-red-100 bg-red-50/60' : 'border-slate-100 bg-white hover:bg-slate-50'
+                      className={`group rounded-[1.7rem] border p-4 transition-all hover:shadow-md md:rounded-3xl ${
+                        b.urgent
+                          ? 'border-red-100 bg-red-50/60'
+                          : 'border-slate-100 bg-white hover:bg-slate-50'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex gap-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 gap-3 md:gap-4">
                           <div
-                            className={`flex h-12 w-12 items-center justify-center rounded-2xl text-xl ${
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg md:h-12 md:w-12 md:text-xl ${
                               b.status === 'returned'
                                 ? 'bg-blue-50 text-blue-600'
                                 : b.urgent
@@ -287,9 +355,9 @@ export default function DashboardPage() {
                             {b.status === 'returned' ? '✅' : b.urgent ? '🚨' : '💻'}
                           </div>
 
-                          <div className="space-y-1">
+                          <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-black text-slate-800 group-hover:text-blue-600">
+                              <p className="break-words text-base font-black leading-snug text-slate-800 group-hover:text-blue-600 md:text-lg">
                                 {getDisplayName(b)}
                               </p>
 
@@ -320,14 +388,18 @@ export default function DashboardPage() {
                             </p>
 
                             {b.reason && (
-                              <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                              เหตุผล: {b.reason}
+                              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                                เหตุผล: {b.reason}
                               </p>
                             )}
                           </div>
                         </div>
 
-                        <span className={`shrink-0 rounded-full border px-4 py-1 text-[14px] font-black ${getStatusStyle(b.status)}`}>
+                        <span
+                          className={`w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-black md:px-4 md:text-sm ${getStatusStyle(
+                            b.status
+                          )}`}
+                        >
                           {getStatusText(b.status)}
                         </span>
                       </div>
@@ -342,7 +414,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="flex items-center gap-2 px-2 text-lg font-black text-slate-800">
+              <h2 className="flex items-center gap-2 px-1 text-lg font-black text-slate-800 md:px-2 md:text-xl">
                 <span className="h-2 w-2 rounded-full bg-orange-500"></span>
                 รายการรออนุมัติ
               </h2>
@@ -352,14 +424,16 @@ export default function DashboardPage() {
                   pendingList.map((req) => (
                     <div
                       key={req.id}
-                      className={`rounded-[2rem] border p-5 transition-all hover:shadow-lg ${
-                        req.urgent ? 'border-red-100 bg-red-50 ring-2 ring-red-500/5' : 'border-slate-100 bg-white shadow-sm'
+                      className={`rounded-[1.7rem] border p-4 transition-all hover:shadow-lg md:rounded-[2rem] md:p-5 ${
+                        req.urgent
+                          ? 'border-red-100 bg-red-50 ring-2 ring-red-500/5'
+                          : 'border-slate-100 bg-white shadow-sm'
                       }`}
                     >
-                      <div className="mb-3 flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
                           <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-black text-slate-800">
+                            <p className="break-words text-sm font-black leading-snug text-slate-800">
                               {getDisplayName(req)}
                             </p>
 
@@ -379,7 +453,7 @@ export default function DashboardPage() {
                           </p>
 
                           {req.reason && (
-                            <p className="mt-2 line-clamp-2 text-xs text-slate-500">
+                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">
                               เหตุผล: {req.reason}
                             </p>
                           )}
@@ -388,7 +462,9 @@ export default function DashboardPage() {
                         <Link href={`/approvals?id=${req.id}`}>
                           <button
                             className={`rounded-xl p-2 text-white shadow-lg transition-all active:scale-90 ${
-                              req.urgent ? 'bg-red-600 shadow-red-200' : 'bg-blue-600 shadow-blue-200'
+                              req.urgent
+                                ? 'bg-red-600 shadow-red-200'
+                                : 'bg-blue-600 shadow-blue-200'
                             }`}
                           >
                             <ChevronRight size={18} />
@@ -396,12 +472,16 @@ export default function DashboardPage() {
                         </Link>
                       </div>
 
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                      <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-[11px] font-bold text-slate-500">
                           👤 {getUserDisplayName(req)}
                         </div>
 
-                        <div className={`text-[10px] font-black ${req.urgent ? 'text-red-500' : 'text-slate-400'}`}>
+                        <div
+                          className={`text-[10px] font-black ${
+                            req.urgent ? 'text-red-500' : 'text-slate-400'
+                          }`}
+                        >
                           ⏰{' '}
                           {new Date(req.created_at).toLocaleTimeString('th-TH', {
                             hour: '2-digit',
@@ -413,7 +493,7 @@ export default function DashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-[2.5rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+                  <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-10 text-center md:rounded-[2.5rem] md:p-12">
                     <CheckCircle2 size={32} className="mx-auto mb-2 text-slate-300" />
                     <p className="text-sm font-bold italic tracking-tight text-slate-400">
                       ไม่มีรายการค้าง
@@ -451,17 +531,20 @@ function StatBox({ title, value, color, icon, isHighlight = false }: any) {
 
   return (
     <div
-      className={`rounded-3xl border-b-4 bg-white p-5 shadow-xl shadow-slate-100/50 transition-all hover:-translate-y-1 ${colorMaps[color]}`}
+      className={`rounded-[1.7rem] border-b-4 bg-white p-4 shadow-lg shadow-slate-100/60 transition-all hover:-translate-y-1 md:rounded-3xl md:p-5 md:shadow-xl ${colorMaps[color]}`}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <h3 className="break-words text-[10px] font-black uppercase leading-snug tracking-widest text-slate-400 md:text-[11px]">
           {title}
         </h3>
-        <div className="rounded-lg bg-white p-1.5 shadow-sm">{icon}</div>
+
+        <div className="shrink-0 rounded-xl bg-white p-2 shadow-sm">
+          {icon}
+        </div>
       </div>
 
       <p
-        className={`text-2xl font-black tracking-tight tabular-nums ${
+        className={`text-3xl font-black tracking-tight tabular-nums md:text-2xl ${
           isHighlight ? colorMaps[color].split(' ')[1] : 'text-slate-800'
         }`}
       >
