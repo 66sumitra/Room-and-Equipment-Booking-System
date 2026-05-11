@@ -170,12 +170,20 @@ export default function UserComputerBooking() {
 
   const handleBooking = async () => {
     if (!selectedPc) {
-      showPopup('error', 'ยังไม่ได้เลือกเครื่อง', 'กรุณาเลือกเครื่องคอมพิวเตอร์ก่อน');
+      showPopup(
+        'error',
+        'ยังไม่ได้เลือกเครื่อง',
+        'กรุณาเลือกเครื่องคอมพิวเตอร์ก่อน'
+      );
       return;
     }
 
     if (selectedPc.status !== 'available') {
-      showPopup('error', 'เครื่องไม่ว่าง', 'เครื่องนี้ไม่ว่างแล้ว กรุณาเลือกเครื่องอื่น');
+      showPopup(
+        'error',
+        'เครื่องไม่ว่าง',
+        'เครื่องนี้ไม่ว่างแล้ว กรุณาเลือกเครื่องอื่น'
+      );
       await fetchAvailablePCs();
       return;
     }
@@ -226,9 +234,9 @@ export default function UserComputerBooking() {
           .map((admin) => ({
             user_email: admin.email,
             title: 'มีคำขอใช้คอมพิวเตอร์ใหม่',
-            message: `${currentUserEmail} ได้ส่งคำขอใช้งาน ${selectedPc.pc_name} ห้อง ${getRoomName(
-              selectedPc
-            )}`,
+            message: `${currentUserEmail} ได้ส่งคำขอใช้งาน ${
+              selectedPc.pc_name
+            } ห้อง ${getRoomName(selectedPc)}`,
             type: 'new_request',
             related_request_id: insertedRequest.id,
           }))
@@ -239,7 +247,9 @@ export default function UserComputerBooking() {
       {
         user_email: currentUserEmail,
         title: 'ส่งคำขอใช้งานคอมพิวเตอร์สำเร็จ',
-        message: `คุณได้ส่งคำขอใช้งาน ${selectedPc.pc_name} ห้อง ${getRoomName(
+        message: `คุณได้ส่งคำขอใช้งาน ${
+          selectedPc.pc_name
+        } ห้อง ${getRoomName(
           selectedPc
         )} แล้ว กรุณารอแอดมินตรวจสอบ`,
         type: 'request_submitted',
@@ -288,12 +298,21 @@ export default function UserComputerBooking() {
 
             <div className="relative hidden md:block">
               <div className="relative flex h-28 w-64 items-end justify-end overflow-hidden rounded-[24px] bg-gradient-to-br from-[#f7f8ff] to-[#eef3ff] px-5 py-4">
-                <Sparkles className="absolute left-5 top-5 text-[#91a2ff]" size={16} />
-                <Sparkles className="absolute left-16 top-10 text-[#ffb86b]" size={14} />
-                <Sparkles className="absolute right-16 top-7 text-[#ff9aa2]" size={12} />
+                <Sparkles
+                  className="absolute left-5 top-5 text-[#91a2ff]"
+                  size={16}
+                />
+                <Sparkles
+                  className="absolute left-16 top-10 text-[#ffb86b]"
+                  size={14}
+                />
+                <Sparkles
+                  className="absolute right-16 top-7 text-[#ff9aa2]"
+                  size={12}
+                />
                 <div className="absolute bottom-3 right-6 flex items-end gap-3">
                   <div className="h-4 w-16 rounded-full bg-[#90b4ff]" />
-                  <div className="flex h-16 w-20 items-center justify-center rounded-t-[12px] rounded-b-[8px] bg-[#7e8ff6]">
+                  <div className="flex h-16 w-20 items-center justify-center rounded-b-[8px] rounded-t-[12px] bg-[#7e8ff6]">
                     <Monitor size={30} className="text-white" />
                   </div>
                   <div className="h-10 w-10 rounded-full bg-[#c9dcff]" />
@@ -306,7 +325,9 @@ export default function UserComputerBooking() {
         <div className="mb-6 rounded-[24px] border border-[#e7ecf5] bg-white p-4 shadow-[0_10px_30px_rgba(148,163,184,0.08)] md:p-5">
           <div className="mb-3 flex items-center gap-2 text-slate-800">
             <DoorOpen size={20} className="text-[#4d7cff]" />
-            <h2 className="text-base font-black md:text-lg">เลือกห้องคอมพิวเตอร์</h2>
+            <h2 className="text-base font-black md:text-lg">
+              เลือกห้องคอมพิวเตอร์
+            </h2>
           </div>
 
           {rooms.length > 0 ? (
@@ -326,7 +347,9 @@ export default function UserComputerBooking() {
               ))}
             </div>
           ) : (
-            <p className="text-sm font-bold text-slate-400">ยังไม่มีข้อมูลห้อง</p>
+            <p className="text-sm font-bold text-slate-400">
+              ยังไม่มีข้อมูลห้อง
+            </p>
           )}
         </div>
 
@@ -346,7 +369,9 @@ export default function UserComputerBooking() {
                 {loading ? (
                   <div className="col-span-full flex min-h-[220px] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-[#dbe5f5] bg-[#fafcff]">
                     <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-slate-200 border-t-[#4d7cff]" />
-                    <p className="text-base font-bold text-slate-500">กำลังโหลดข้อมูล...</p>
+                    <p className="text-base font-bold text-slate-500">
+                      กำลังโหลดข้อมูล...
+                    </p>
                   </div>
                 ) : filteredComputers.length > 0 ? (
                   filteredComputers.map((pc) => {
@@ -401,7 +426,10 @@ export default function UserComputerBooking() {
                   })
                 ) : (
                   <div className="col-span-full rounded-[24px] border border-dashed border-[#dbe5f5] bg-[#fafcff] px-6 py-12 text-center">
-                    <Monitor size={36} className="mx-auto mb-3 text-slate-300" />
+                    <Monitor
+                      size={36}
+                      className="mx-auto mb-3 text-slate-300"
+                    />
                     <p className="text-base font-black text-slate-500">
                       ไม่พบเครื่องคอมพิวเตอร์ในห้องนี้
                     </p>
@@ -433,15 +461,6 @@ export default function UserComputerBooking() {
                     </p>
                     <p className="mt-2 text-sm font-bold text-slate-400">
                       ห้อง {getRoomName(selectedPc)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[21px] border border-[#e8edf5] bg-[#f8fafc] p-5">
-                    <p className="mb-2 text-sm font-black uppercase tracking-wider text-slate-400">
-                      ผู้ใช้งาน
-                    </p>
-                    <p className="break-words text-[16px] font-bold text-slate-800">
-                      {currentUserEmail || 'ไม่พบอีเมลผู้ใช้'}
                     </p>
                   </div>
 
@@ -508,7 +527,9 @@ export default function UserComputerBooking() {
               </button>
             </div>
 
-            <h3 className="mb-2 text-2xl font-black text-slate-800">{popup.title}</h3>
+            <h3 className="mb-2 text-2xl font-black text-slate-800">
+              {popup.title}
+            </h3>
             <p className="mb-6 text-base font-semibold leading-relaxed text-slate-500">
               {popup.message}
             </p>
