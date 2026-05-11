@@ -10,16 +10,15 @@ export async function POST(req: Request) {
     }
 
     const transporter = nodemailer.createTransport({
-      host: process.env.MAILTRAP_HOST,
-      port: Number(process.env.MAILTRAP_PORT),
+      service: 'gmail',
       auth: {
-        user: process.env.MAILTRAP_USER,
-        pass: process.env.MAILTRAP_PASS,
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
 
     const info = await transporter.sendMail({
-      from: '"ระบบยืม-คืน" <no-reply@demo.local>',
+      from: `"ระบบยืม-คืน" <${process.env.GMAIL_USER}>`,
       to,
       subject,
       text: message,
@@ -37,7 +36,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, info });
   } catch (error: any) {
-    console.error('send-email route error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('send-email route warning:', error);
+    return NextResponse.json(
+      { error: error.message || 'ส่งอีเมลไม่สำเร็จ' },
+      { status: 500 }
+    );
   }
 }

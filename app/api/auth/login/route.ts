@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // 2) ดึงข้อมูลเพิ่มจากตาราง users
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('id, email, name, full_name, username, role')
+      .select('id, email, name, full_name, username, role, email_verified')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -45,11 +45,29 @@ export async function POST(request: NextRequest) {
       console.error('Profile error:', profileError.message);
     }
 
-    const role = profile?.role || 'user';
+    if (!profile) {
+      return NextResponse.json(
+        { message: 'ไม่พบข้อมูลผู้ใช้ในระบบ' },
+        { status: 404 }
+      );
+    }
+
+    // 3) เช็กว่ายืนยันอีเมลหรือยัง
+    if (!profile.email_verified) {
+      await supabase.auth.signOut();
+
+      return NextResponse.json(
+        { message: 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ' },
+        { status: 403 }
+      );
+    }
+
+    const role = profile.role || 'user';
+
     const fullName =
-      profile?.full_name ||
-      profile?.name ||
-      profile?.username ||
+      profile.full_name ||
+      profile.name ||
+      profile.username ||
       user.user_metadata?.full_name ||
       user.email ||
       'User';

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabaseClient';
 import {
   ImageIcon,
@@ -13,8 +12,6 @@ import {
   LayoutGrid,
   CheckCircle2,
   Clock,
-  Mail,
-  User,
   AlertCircle,
 } from 'lucide-react';
 
@@ -29,13 +26,15 @@ export default function BookingPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [currentUserName, setCurrentUserName] = useState('');
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
     borrowDate: '',
+    borrowTime: '',
     returnDate: '',
+    returnTime: '',
     reason: '',
     urgent: false,
   });
@@ -43,6 +42,47 @@ export default function BookingPage() {
   const openWarningModal = (message: string) => {
     setWarningMessage(message);
     setShowWarning(true);
+  };
+
+  const sendEmail = async (
+    to: string | null | undefined,
+    subject: string,
+    message: string
+  ) => {
+    if (!to) return;
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('sendEmail error:', errorData);
+      }
+    } catch (error) {
+      console.error('sendEmail failed:', error);
+    }
+  };
+
+  const formatThaiDateTime = (dateTime: string) => {
+    if (!dateTime) return '-';
+
+    return new Date(dateTime).toLocaleString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   useEffect(() => {
@@ -58,12 +98,14 @@ export default function BookingPage() {
 
       const userEmail = user.email || '';
 
+      const { data: profile } = await supabase
+        .from('users')
+        .select('name, email')
+        .eq('id', user.id)
+        .maybeSingle();
+
       setCurrentUserEmail(userEmail);
-      setForm((prev) => ({
-        ...prev,
-        name: '',
-        email: userEmail,
-      }));
+      setCurrentUserName(profile?.name || userEmail || 'ผู้ใช้งาน');
 
       fetchEquipment();
     };
@@ -114,6 +156,17 @@ export default function BookingPage() {
     return matchesSearch && matchesCategory;
   });
 
+  const resetForm = () => {
+    setForm({
+      borrowDate: '',
+      borrowTime: '',
+      returnDate: '',
+      returnTime: '',
+      reason: '',
+      urgent: false,
+    });
+  };
+
   const submitBorrow = async () => {
     if (!selected || selected.available_stock <= 0) return;
 
@@ -122,25 +175,29 @@ export default function BookingPage() {
       return;
     }
 
-    if (!form.name.trim()) {
-      openWarningModal('กรุณากรอกชื่อผู้ขอยืม');
-      return;
-    }
-
-    if (!form.borrowDate || !form.returnDate || !form.reason.trim()) {
+    if (
+      !form.borrowDate ||
+      !form.borrowTime ||
+      !form.returnDate ||
+      !form.returnTime ||
+      !form.reason.trim()
+    ) {
       openWarningModal('กรุณากรอกข้อมูลให้ครบ');
       return;
     }
 
-    const borrowTime = new Date(form.borrowDate).getTime();
-    const returnTime = new Date(form.returnDate).getTime();
+    const borrowDateTime = `${form.borrowDate}T${form.borrowTime}`;
+    const returnDateTime = `${form.returnDate}T${form.returnTime}`;
 
-    if (returnTime <= borrowTime) {
+    const borrowTimeValue = new Date(borrowDateTime).getTime();
+    const returnTimeValue = new Date(returnDateTime).getTime();
+
+    if (returnTimeValue <= borrowTimeValue) {
       openWarningModal('วันเวลาคืนต้องมากกว่าวันเวลาเริ่มยืม');
       return;
     }
 
-    const borrowerName = form.name.trim();
+    const borrowerName = currentUserName || currentUserEmail || 'ผู้ใช้งาน';
 
     const { data: insertedRequest, error: insertError } = await supabase
       .from('borrow_requests')
@@ -151,9 +208,9 @@ export default function BookingPage() {
           computer_id: null,
           user_name: borrowerName,
           user_email: currentUserEmail,
-          reason: form.reason,
-          borrow_date: form.borrowDate,
-          return_date: form.returnDate,
+          reason: form.reason.trim(),
+          borrow_date: borrowDateTime,
+          return_date: returnDateTime,
           urgent: form.urgent,
           status: 'pending',
         },
@@ -172,30 +229,45 @@ export default function BookingPage() {
       .eq('role', 'admin');
 
     if (!adminError && admins && admins.length > 0) {
+      const adminList = admins.filter((admin) => admin.email);
+
       await supabase.from('notifications').insert(
-        admins
-          .filter((admin) => admin.email)
-          .map((admin) => ({
-            user_email: admin.email,
-            title: form.urgent ? 'มีคำขอด่วนใหม่' : 'มีคำขอใหม่',
-            message: `${borrowerName} ได้ส่งคำขอยืม ${selected.name}`,
-            type: form.urgent ? 'urgent_request' : 'new_request',
-            related_request_id: insertedRequest.id,
-          }))
+        adminList.map((admin) => ({
+          user_email: admin.email,
+          title: form.urgent ? 'มีคำขอด่วนใหม่' : 'มีคำขอใหม่',
+          message: `${borrowerName} ได้ส่งคำขอยืม ${selected.name}`,
+          type: form.urgent ? 'urgent_request' : 'new_request',
+          related_request_id: insertedRequest.id,
+        }))
+      );
+
+      await Promise.all(
+        adminList.map((admin) =>
+          sendEmail(
+            admin.email,
+            form.urgent ? 'มีคำขอยืมอุปกรณ์ด่วน' : 'มีคำขอยืมอุปกรณ์ใหม่',
+            `มีคำขอยืมอุปกรณ์ใหม่จากระบบ
+
+รายละเอียดคำขอ
+ผู้ขอยืม: ${borrowerName}
+อีเมลผู้ขอยืม: ${currentUserEmail}
+อุปกรณ์: ${selected.name}
+วันที่เริ่มยืม: ${formatThaiDateTime(borrowDateTime)}
+วันที่คืน: ${formatThaiDateTime(returnDateTime)}
+เหตุผล: ${form.reason.trim()}
+ความเร่งด่วน: ${form.urgent ? 'เร่งด่วน' : 'ปกติ'}
+สถานะ: รออนุมัติ
+
+กรุณาเข้าสู่ระบบเพื่อตรวจสอบและอนุมัติคำขอ`
+          )
+        )
       );
     }
 
     setOpen(false);
     setShowSuccess(true);
     setSelected(null);
-    setForm({
-      name: '',
-      email: currentUserEmail,
-      borrowDate: '',
-      returnDate: '',
-      reason: '',
-      urgent: false,
-    });
+    resetForm();
 
     fetchEquipment();
   };
@@ -356,7 +428,9 @@ export default function BookingPage() {
                       setOpen(true);
                     }}
                   >
-                    {item.available_stock <= 0 ? 'ถูกยืมเเล้ว' : 'ขอยืมอุปกรณ์'}
+                    {item.available_stock <= 0
+                      ? 'ถูกยืมเเล้ว'
+                      : 'ขอยืมอุปกรณ์'}
                   </Button>
                 </div>
               </div>
@@ -372,57 +446,54 @@ export default function BookingPage() {
       >
         <div className="space-y-5 pt-4 font-bold text-black">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-1">
-              <label className="ml-1 flex items-center gap-2 text-[11px] font-black uppercase text-slate-400">
-                <User size={14} />
-                ชื่อผู้ขอยืม
-              </label>
-              <Input
-                placeholder="กรอกชื่อ-นามสกุล"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="ml-1 flex items-center gap-2 text-[11px] font-black uppercase text-slate-400">
-                <Mail size={14} />
-                อีเมลผู้ขอยืม
+            <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+              <label className="block text-[11px] font-black uppercase text-blue-500">
+                วันที่เริ่มยืม
               </label>
               <input
-                type="text"
-                value={form.email}
-                disabled
-                className="h-11 w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 text-xs font-bold text-slate-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="ml-1 text-[11px] font-black uppercase text-slate-400">
-                วันเวลาเริ่มยืม
-              </label>
-              <input
-                type="datetime-local"
-                className="h-11 w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 text-xs font-bold"
+                type="date"
+                className="h-11 w-full rounded-xl border-2 border-blue-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
                 value={form.borrowDate}
                 onChange={(e) =>
                   setForm({ ...form, borrowDate: e.target.value })
                 }
               />
-            </div>
 
-            <div className="space-y-1">
-              <label className="ml-1 text-[11px] font-black uppercase text-slate-400">
-                วันเวลาคืน
+              <label className="block text-[11px] font-black uppercase text-blue-500">
+                เวลาเริ่มยืม
               </label>
               <input
-                type="datetime-local"
-                className="h-11 w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 text-xs font-bold"
+                type="time"
+                className="h-11 w-full rounded-xl border-2 border-blue-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+                value={form.borrowTime}
+                onChange={(e) =>
+                  setForm({ ...form, borrowTime: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+              <label className="block text-[11px] font-black uppercase text-emerald-500">
+                วันที่คืน
+              </label>
+              <input
+                type="date"
+                className="h-11 w-full rounded-xl border-2 border-emerald-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-emerald-500"
                 value={form.returnDate}
                 onChange={(e) =>
                   setForm({ ...form, returnDate: e.target.value })
+                }
+              />
+
+              <label className="block text-[11px] font-black uppercase text-emerald-500">
+                เวลาคืน
+              </label>
+              <input
+                type="time"
+                className="h-11 w-full rounded-xl border-2 border-emerald-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-emerald-500"
+                value={form.returnTime}
+                onChange={(e) =>
+                  setForm({ ...form, returnTime: e.target.value })
                 }
               />
             </div>

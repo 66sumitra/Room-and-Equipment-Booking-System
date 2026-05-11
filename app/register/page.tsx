@@ -93,25 +93,25 @@ export default function RegisterPage() {
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">ชื่อ-นามสกุล</label>
-            <input type="text" placeholder="กรุณากรอกชื่อ นามสกุล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold" 
+            <input type="text" placeholder="ระบุชื่อ-นามสกุล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold" 
               onChange={(e) => setFormData({...formData, fullName: e.target.value})} required />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">อีเมล</label>
-            <input type="email" placeholder="กรุณากรอกอีเมล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
+            <input type="email" placeholder="ระบุอีเมล" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
               onChange={(e) => setFormData({...formData, email: e.target.value})} required />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">รหัสผ่าน</label>
-            <input type="password" placeholder="กรุณากรอกรหัสผ่าน" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
+            <input type="password" placeholder="ป้อนรหัสผ่าน" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
               onChange={(e) => setFormData({...formData, password: e.target.value})} required />
           </div>
 
           <div>
             <label className="text-xs text-gray-500 ml-1 uppercase">ยืนยันรหัสผ่าน</label>
-            <input type="password" placeholder="กรุณากรอกรหัสผ่านอีกครั้ง" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
+            <input type="password" placeholder="ยืนยันรหัสผ่านอีกครั้ง" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-black font-bold"
               onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} required />
           </div>
 
