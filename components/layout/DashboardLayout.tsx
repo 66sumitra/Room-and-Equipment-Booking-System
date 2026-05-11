@@ -62,13 +62,11 @@ export function DashboardLayout({
     const now = new Date();
     const hour = now.getHours();
 
-    // เช็กตอนเช้า ถ้า user/admin เปิดระบบช่วง 08:00 - 08:59
     return hour === 8;
   };
 
   const getDueType = (borrowDate: string, returnDate: string) => {
     const now = new Date();
-    const borrow = new Date(borrowDate);
     const due = new Date(returnDate);
 
     const diffMinutes = (due.getTime() - now.getTime()) / 1000 / 60;
@@ -97,7 +95,6 @@ export function DashboardLayout({
       return null;
     }
 
-    // กรณียืมภายในวันเดียว แจ้งก่อนคืน 15 นาที
     if (diffMinutes <= 15) {
       return 'due_15_min';
     }
@@ -145,7 +142,11 @@ export function DashboardLayout({
     });
   };
 
-  const getUserDueMessage = (type: string, itemName: string, returnDate: string) => {
+  const getUserDueMessage = (
+    type: string,
+    itemName: string,
+    returnDate: string
+  ) => {
     const dueDateText = formatThaiDateTime(returnDate);
     const dueTimeText = formatThaiTime(returnDate);
 
@@ -199,7 +200,8 @@ export function DashboardLayout({
 
     let query = supabase
       .from('borrow_requests')
-      .select(`
+      .select(
+        `
         id,
         user_email,
         request_type,
@@ -207,7 +209,8 @@ export function DashboardLayout({
         return_date,
         equipment ( name ),
         computers ( pc_name )
-      `)
+      `
+      )
       .eq('status', 'approved')
       .not('borrow_date', 'is', null)
       .not('return_date', 'is', null);
@@ -245,7 +248,8 @@ export function DashboardLayout({
 
     const existingSet = new Set(
       (existingNotifications || []).map(
-        (item: any) => `${item.user_email}-${item.type}-${item.related_request_id}`
+        (item: any) =>
+          `${item.user_email}-${item.type}-${item.related_request_id}`
       )
     );
 
@@ -329,11 +333,13 @@ export function DashboardLayout({
       hasCheckedDueRef.current = true;
       checkDueReturnNotifications();
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userEmail, userRole]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 font-bold text-black">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-center font-bold text-black">
         กำลังตรวจสอบสิทธิ์...
       </div>
     );
@@ -343,13 +349,19 @@ export function DashboardLayout({
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-gray-50">
+      {/* Desktop / iPad sidebar */}
+      <div className="hidden shrink-0 md:block">
+        <Sidebar />
+      </div>
 
-      <div className="min-w-0 flex-1">
+      {/* Main content */}
+      <div className="min-w-0 flex-1 w-full">
         <Header title={title} actionButton={actionButton} />
 
-        <main className="p-6">{children}</main>
+        <main className="w-full overflow-x-hidden p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
