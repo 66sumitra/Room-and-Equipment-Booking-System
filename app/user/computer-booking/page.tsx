@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import {
@@ -13,12 +13,14 @@ import {
   Sparkles,
   MousePointerClick,
   CheckCircle,
+  DoorOpen,
 } from 'lucide-react';
 
 export default function UserComputerBooking() {
   const [computers, setComputers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPc, setSelectedPc] = useState<any>(null);
+  const [selectedRoom, setSelectedRoom] = useState('');
   const [reason, setReason] = useState('');
   const [currentUserEmail, setCurrentUserEmail] = useState('');
 
@@ -54,6 +56,24 @@ export default function UserComputerBooking() {
     }));
   };
 
+  const getRoomName = (pc: any) => {
+    return pc.room_name || pc.room_code || 'ไม่ระบุห้อง';
+  };
+
+  const rooms = useMemo(() => {
+    const roomList = Array.from(
+      new Set(computers.map((pc) => getRoomName(pc)).filter(Boolean))
+    );
+
+    return roomList;
+  }, [computers]);
+
+  const filteredComputers = useMemo(() => {
+    if (!selectedRoom) return computers;
+
+    return computers.filter((pc) => getRoomName(pc) === selectedRoom);
+  }, [computers, selectedRoom]);
+
   const fetchAvailablePCs = async () => {
     try {
       setLoading(true);
@@ -61,12 +81,29 @@ export default function UserComputerBooking() {
       const { data, error } = await supabase
         .from('computers')
         .select('*')
-        .eq('room_name', '1-0301')
+        .order('room_name', { ascending: true })
         .order('pc_name', { ascending: true });
 
       if (error) throw error;
 
-      setComputers(data || []);
+      const allComputers = data || [];
+      setComputers(allComputers);
+
+      const roomList = Array.from(
+        new Set(allComputers.map((pc) => getRoomName(pc)).filter(Boolean))
+      );
+
+      if (!selectedRoom && roomList.length > 0) {
+        setSelectedRoom(roomList[0]);
+      }
+
+      if (
+        selectedRoom &&
+        !roomList.includes(selectedRoom) &&
+        roomList.length > 0
+      ) {
+        setSelectedRoom(roomList[0]);
+      }
     } catch (error: any) {
       console.error('fetchAvailablePCs error:', error.message);
       setComputers([]);
@@ -122,7 +159,14 @@ export default function UserComputerBooking() {
         supabase.removeChannel(realtimeChannel);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSelectRoom = (room: string) => {
+    setSelectedRoom(room);
+    setSelectedPc(null);
+    setReason('');
+  };
 
   const handleBooking = async () => {
     if (!selectedPc) {
@@ -182,7 +226,9 @@ export default function UserComputerBooking() {
           .map((admin) => ({
             user_email: admin.email,
             title: 'มีคำขอใช้คอมพิวเตอร์ใหม่',
-            message: `${currentUserEmail} ได้ส่งคำขอใช้งาน ${selectedPc.pc_name}`,
+            message: `${currentUserEmail} ได้ส่งคำขอใช้งาน ${selectedPc.pc_name} ห้อง ${getRoomName(
+              selectedPc
+            )}`,
             type: 'new_request',
             related_request_id: insertedRequest.id,
           }))
@@ -193,7 +239,9 @@ export default function UserComputerBooking() {
       {
         user_email: currentUserEmail,
         title: 'ส่งคำขอใช้งานคอมพิวเตอร์สำเร็จ',
-        message: `คุณได้ส่งคำขอใช้งาน ${selectedPc.pc_name} แล้ว กรุณารอแอดมินตรวจสอบ`,
+        message: `คุณได้ส่งคำขอใช้งาน ${selectedPc.pc_name} ห้อง ${getRoomName(
+          selectedPc
+        )} แล้ว กรุณารอแอดมินตรวจสอบ`,
         type: 'request_submitted',
         related_request_id: insertedRequest.id,
       },
@@ -211,29 +259,29 @@ export default function UserComputerBooking() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f8fc] px-6 py-8">
+    <div className="min-h-screen bg-[#f6f8fc] px-4 py-6 md:px-6 md:py-8">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/user/booking"
-          className="mb-6 inline-flex items-center gap-2 rounded-full px-2 py-1 text-base font-bold text-slate-700 transition hover:text-blue-600"
+          className="mb-6 inline-flex items-center gap-2 rounded-full px-2 py-1 text-sm font-bold text-slate-700 transition hover:text-blue-600 md:text-base"
         >
           <ArrowLeft size={20} />
           ย้อนกลับ
         </Link>
 
-        <div className="mb-7 overflow-hidden rounded-[28px] border border-[#e7ecf5] bg-white shadow-[0_10px_30px_rgba(148,163,184,0.10)]">
-          <div className="flex flex-col items-start justify-between gap-6 px-6 py-7 md:flex-row md:items-center md:px-8">
-            <div className="flex items-center gap-5">
-              <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#eef2ff] text-[#6d7ff2]">
-                <Monitor size={38} strokeWidth={2.2} />
+        <div className="mb-7 overflow-hidden rounded-[24px] border border-[#e7ecf5] bg-white shadow-[0_10px_30px_rgba(148,163,184,0.10)] md:rounded-[28px]">
+          <div className="flex flex-col items-start justify-between gap-6 px-5 py-6 md:flex-row md:items-center md:px-8 md:py-7">
+            <div className="flex items-center gap-4 md:gap-5">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] bg-[#eef2ff] text-[#6d7ff2] md:h-20 md:w-20 md:rounded-[24px]">
+                <Monitor size={34} strokeWidth={2.2} />
               </div>
 
               <div>
-                <h1 className="text-[23px] font-black leading-tight text-slate-800">
+                <h1 className="text-[20px] font-black leading-tight text-slate-800 md:text-[23px]">
                   ขอใช้งานคอมพิวเตอร์
                 </h1>
-                <p className="mt-1 text-lg font-semibold text-slate-300">
-                  ห้องคอมพิวเตอร์ LAB 1-0301
+                <p className="mt-1 text-sm font-semibold text-slate-400 md:text-lg">
+                  ห้องคอมพิวเตอร์ {selectedRoom || 'ทั้งหมด'}
                 </p>
               </div>
             </div>
@@ -255,26 +303,53 @@ export default function UserComputerBooking() {
           </div>
         </div>
 
+        <div className="mb-6 rounded-[24px] border border-[#e7ecf5] bg-white p-4 shadow-[0_10px_30px_rgba(148,163,184,0.08)] md:p-5">
+          <div className="mb-3 flex items-center gap-2 text-slate-800">
+            <DoorOpen size={20} className="text-[#4d7cff]" />
+            <h2 className="text-base font-black md:text-lg">เลือกห้องคอมพิวเตอร์</h2>
+          </div>
+
+          {rooms.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {rooms.map((room) => (
+                <button
+                  key={room}
+                  onClick={() => handleSelectRoom(room)}
+                  className={`rounded-2xl border px-4 py-2 text-sm font-black transition-all ${
+                    selectedRoom === room
+                      ? 'border-[#2f6df6] bg-[#2f6df6] text-white shadow-lg shadow-blue-100'
+                      : 'border-[#dfe7f3] bg-white text-slate-500 hover:border-[#9fbcff] hover:bg-[#f8fbff]'
+                  }`}
+                >
+                  {room}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm font-bold text-slate-400">ยังไม่มีข้อมูลห้อง</p>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           <div className="xl:col-span-8">
-            <div className="rounded-[28px] border border-[#e7ecf5] bg-white p-6 shadow-[0_10px_30px_rgba(148,163,184,0.10)] md:p-7">
+            <div className="rounded-[24px] border border-[#e7ecf5] bg-white p-5 shadow-[0_10px_30px_rgba(148,163,184,0.10)] md:rounded-[28px] md:p-7">
               <div className="mb-6 flex items-center gap-3">
                 <div className="text-[#4d7cff]">
                   <Monitor size={24} />
                 </div>
-                <h2 className="text-[20px] font-black text-slate-800">
+                <h2 className="text-[18px] font-black text-slate-800 md:text-[20px]">
                   เลือกเครื่องคอมพิวเตอร์
                 </h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-5">
                 {loading ? (
                   <div className="col-span-full flex min-h-[220px] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-[#dbe5f5] bg-[#fafcff]">
                     <div className="h-11 w-11 animate-spin rounded-full border-[3px] border-slate-200 border-t-[#4d7cff]" />
                     <p className="text-base font-bold text-slate-500">กำลังโหลดข้อมูล...</p>
                   </div>
-                ) : (
-                  computers.map((pc) => {
+                ) : filteredComputers.length > 0 ? (
+                  filteredComputers.map((pc) => {
                     const isSelected = selectedPc?.id === pc.id;
                     const isAvailable = pc.status === 'available';
 
@@ -283,7 +358,7 @@ export default function UserComputerBooking() {
                         key={pc.id}
                         disabled={!isAvailable}
                         onClick={() => setSelectedPc(pc)}
-                        className={`relative rounded-[24px] border-2 p-5 text-left transition-all duration-200 ${
+                        className={`relative rounded-[22px] border-2 p-4 text-left transition-all duration-200 md:rounded-[24px] md:p-5 ${
                           isSelected
                             ? 'border-[#2f6df6] bg-[#f4f8ff] shadow-[0_10px_24px_rgba(47,109,246,0.18)]'
                             : isAvailable
@@ -297,15 +372,17 @@ export default function UserComputerBooking() {
                           </div>
                         )}
 
-                        <div className="mb-2 text-[21px] font-black leading-none text-slate-700">
+                        <div className="mb-2 text-[19px] font-black leading-none text-slate-700 md:text-[21px]">
                           {pc.pc_name?.replace('PC-', '') || '-'}
                         </div>
 
-                        <div className="text-lg font-bold text-slate-500">{pc.pc_name}</div>
+                        <div className="text-base font-bold text-slate-500 md:text-lg">
+                          {pc.pc_name}
+                        </div>
 
-                        <div className="mt-5">
+                        <div className="mt-4 md:mt-5">
                           <span
-                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-black ${
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black md:text-sm ${
                               isAvailable
                                 ? 'bg-[#dbf7e7] text-[#23a35b]'
                                 : 'bg-[#ffe0e0] text-[#d54848]'
@@ -322,18 +399,25 @@ export default function UserComputerBooking() {
                       </button>
                     );
                   })
+                ) : (
+                  <div className="col-span-full rounded-[24px] border border-dashed border-[#dbe5f5] bg-[#fafcff] px-6 py-12 text-center">
+                    <Monitor size={36} className="mx-auto mb-3 text-slate-300" />
+                    <p className="text-base font-black text-slate-500">
+                      ไม่พบเครื่องคอมพิวเตอร์ในห้องนี้
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
           <div className="xl:col-span-4">
-            <div className="sticky top-6 rounded-[28px] border border-[#e7ecf5] bg-white p-6 shadow-[0_10px_30px_rgba(148,163,184,0.10)] md:p-7">
+            <div className="sticky top-6 rounded-[24px] border border-[#e7ecf5] bg-white p-5 shadow-[0_10px_30px_rgba(148,163,184,0.10)] md:rounded-[28px] md:p-7">
               <div className="mb-5 flex items-center gap-3 border-b border-[#e5ebf4] pb-4">
                 <div className="text-[#4d7cff]">
                   <ClipboardList size={24} />
                 </div>
-                <h2 className="text-[20px] font-black text-slate-800">
+                <h2 className="text-[18px] font-black text-slate-800 md:text-[20px]">
                   รายละเอียดการขอใช้งาน
                 </h2>
               </div>
@@ -347,13 +431,16 @@ export default function UserComputerBooking() {
                     <p className="text-[20px] font-black leading-none text-slate-900">
                       {selectedPc.pc_name}
                     </p>
+                    <p className="mt-2 text-sm font-bold text-slate-400">
+                      ห้อง {getRoomName(selectedPc)}
+                    </p>
                   </div>
 
                   <div className="rounded-[21px] border border-[#e8edf5] bg-[#f8fafc] p-5">
                     <p className="mb-2 text-sm font-black uppercase tracking-wider text-slate-400">
                       ผู้ใช้งาน
                     </p>
-                    <p className="text-[16px] font-bold text-slate-800">
+                    <p className="break-words text-[16px] font-bold text-slate-800">
                       {currentUserEmail || 'ไม่พบอีเมลผู้ใช้'}
                     </p>
                   </div>
@@ -378,11 +465,13 @@ export default function UserComputerBooking() {
                   </button>
                 </div>
               ) : (
-                <div className="rounded-[24px] border-2 border-dashed border-[#dbe5f5] bg-[#fbfcfe] px-6 py-14 text-center">
+                <div className="rounded-[24px] border-2 border-dashed border-[#dbe5f5] bg-[#fbfcfe] px-6 py-12 text-center md:py-14">
                   <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#f3f6fb] text-slate-400">
                     <MousePointerClick size={38} />
                   </div>
-                  <p className="text-[20px] font-black text-slate-700">กรุณาเลือกเครื่องที่ว่าง</p>
+                  <p className="text-[18px] font-black text-slate-700 md:text-[20px]">
+                    กรุณาเลือกเครื่องที่ว่าง
+                  </p>
                   <p className="mt-2 text-base font-semibold text-slate-400">
                     เพื่อดูรายละเอียดการขอใช้งาน
                   </p>
