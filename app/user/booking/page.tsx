@@ -266,7 +266,6 @@ export default function BookingPage() {
 
     setOpen(false);
     setShowSuccess(true);
-    setSelected(null);
     resetForm();
 
     fetchEquipment();
