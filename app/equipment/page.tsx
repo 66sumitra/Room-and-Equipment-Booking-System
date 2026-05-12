@@ -174,9 +174,7 @@ export default function AdminEquipmentPage() {
 
       if (modalMode === 'add') {
         const { error } = await supabase.from('equipment').insert([payload]);
-
         if (error) throw error;
-
         openSuccess('เพิ่มอุปกรณ์ใหม่เรียบร้อยแล้ว');
       } else {
         const { error } = await supabase
@@ -185,7 +183,6 @@ export default function AdminEquipmentPage() {
           .eq('id', formData.id);
 
         if (error) throw error;
-
         openSuccess('อัปเดตข้อมูลอุปกรณ์เรียบร้อยแล้ว');
       }
 
@@ -211,6 +208,7 @@ export default function AdminEquipmentPage() {
       status: item.status || 'available',
       image_url: item.image_url || '',
     });
+
     setImagePreview(item.image_url || null);
     setImageFile(null);
     setModalMode('edit');
@@ -259,7 +257,6 @@ export default function AdminEquipmentPage() {
       }
     >
       <div className="pb-28 md:pb-16">
-        {/* Mobile Card View */}
         <div className="space-y-4 md:hidden">
           {equipmentList.length > 0 ? (
             equipmentList.map((item) => (
@@ -354,7 +351,6 @@ export default function AdminEquipmentPage() {
           )}
         </div>
 
-        {/* Desktop Table View */}
         <div className="hidden overflow-hidden rounded-2xl border border-gray-100 bg-white text-black shadow-xl md:block">
           <table className="w-full border-collapse">
             <thead className="bg-slate-800 text-white">
