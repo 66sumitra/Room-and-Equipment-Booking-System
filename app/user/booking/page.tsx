@@ -225,7 +225,7 @@ function DateTimePickerPopup({
 
   return (
     <div className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/50 px-3 pb-3 backdrop-blur-sm sm:items-center sm:py-6">
-      <div className="flex max-h-[82svh] w-full max-w-md flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+      <div className="flex max-h-[82svh] w-full max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl sm:max-w-md">
         <div
           className={`shrink-0 px-5 py-5 text-white ${
             picker.color === 'blue'
@@ -263,7 +263,7 @@ function DateTimePickerPopup({
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {picker.type === 'date' ? (
             <div className="space-y-4">
-              <div className="rounded-[24px] border border-slate-100 bg-slate-50 p-4">
+              <div className="overflow-hidden rounded-[24px] border border-slate-100 bg-slate-50 p-4">
                 <p className="mb-3 text-sm font-black text-slate-700">
                   เลือกวันที่
                 </p>
@@ -349,17 +349,17 @@ function DateTimePickerPopup({
                   กรอกเวลา
                 </label>
 
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={customTime}
-                  onChange={(e) => {
-                    setCustomTime(e.target.value);
-                    setTimeError('');
-                  }}
-                  placeholder="เช่น 09.00, 13.00, 19.00"
-                  className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition placeholder:text-slate-300 focus:ring-4 ${inputFocusClass}`}
-                />
+               <input
+                    type="text"
+                 inputMode="numeric"
+                   value={customTime}
+                       onChange={(e) => {
+                            setCustomTime(e.target.value);
+                   setTimeError('');
+            }}
+                     placeholder="เช่น 09.00, 13.00, 19.00"
+                       className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition placeholder:text-slate-300 focus:ring-4 ${inputFocusClass}`}
+                        />
 
                 <p className="mt-2 text-xs font-bold text-slate-400">
                   ใช้เวลาแบบ 24 ชั่วโมง เช่น 09.00 = 9 โมงเช้า, 13.00 =
