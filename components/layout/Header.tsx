@@ -99,8 +99,26 @@ export function Header({ title, actionButton }: HeaderProps) {
     };
   }, []);
 
-  const handleNotificationClick = (item: NotificationItem) => {
+  const deleteNotificationById = async (id: string) => {
+    const { error } = await supabase.from('notifications').delete().eq('id', id);
+
+    if (error) {
+      console.error('delete notification error:', error.message);
+      return false;
+    }
+
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
+    return true;
+  };
+
+  const handleNotificationClick = async (item: NotificationItem) => {
     setOpenNotification(false);
+
+    // อ่านแล้วให้ลบออกจากตาราง notifications เลย
+    // พอเปลี่ยนหน้า/รีเฟรช จะไม่เด้งแจ้งเตือนเดิมซ้ำอีก
+    if (item.id) {
+      await deleteNotificationById(item.id);
+    }
 
     if (userRole === 'admin') {
       if (item.related_request_id) {
@@ -266,7 +284,9 @@ export function Header({ title, actionButton }: HeaderProps) {
               <p className="max-w-[115px] truncate text-sm font-black leading-tight text-slate-800 md:max-w-[140px]">
                 {displayName}
               </p>
-              <p className={`text-[11px] font-black leading-tight ${getRoleColor()}`}>
+              <p
+                className={`text-[11px] font-black leading-tight ${getRoleColor()}`}
+              >
                 {getRoleText()}
               </p>
             </div>
