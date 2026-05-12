@@ -278,25 +278,25 @@ export default function BookingPage() {
     <DashboardLayout
       title="ขอยืมอุปกรณ์"
       actionButton={
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
-          <Link href="/user/my-bookings" className="w-full sm:w-auto">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+          <Link href="/user/my-bookings" className="w-auto">
             <Button
               variant="secondary"
               size="sm"
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-black text-slate-500 shadow-sm transition hover:border-blue-300 hover:text-blue-600 sm:h-10 sm:px-5 sm:text-[14px]"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-black text-slate-500 shadow-sm transition hover:border-blue-300 hover:text-blue-600"
             >
-              <Clock size={17} />
+              <Clock size={14} />
               <span>ประวัติการจอง</span>
             </Button>
           </Link>
 
-          <Link href="/user/computer-booking" className="w-full sm:w-auto">
+          <Link href="/user/computer-booking" className="w-auto">
             <Button
               variant="secondary"
               size="sm"
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-3 text-[13px] font-black text-slate-700 shadow-sm transition hover:bg-blue-50 hover:text-blue-600 sm:h-10 sm:px-5 sm:text-[14px]"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 text-[12px] font-black text-slate-700 shadow-sm transition hover:bg-blue-50 hover:text-blue-600"
             >
-              <LayoutGrid size={17} />
+              <LayoutGrid size={14} />
               <span>ขอใช้คอมพิวเตอร์</span>
             </Button>
           </Link>
