@@ -101,6 +101,8 @@ function DateTimePickerPopup({
   onSelect: (value: string) => void;
   onClose: () => void;
 }) {
+  const [customTime, setCustomTime] = useState(value || '');
+
   const formatDateValue = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -111,7 +113,7 @@ function DateTimePickerPopup({
 
   const today = new Date();
 
-  const dateOptions = Array.from({ length: 45 }, (_, index) => {
+  const dateOptions = Array.from({ length: 180 }, (_, index) => {
     const date = new Date(today);
     date.setDate(today.getDate() + index);
 
@@ -130,27 +132,20 @@ function DateTimePickerPopup({
     };
   });
 
-  const timeOptions = Array.from({ length: 29 }, (_, index) => {
-    const totalMinutes = 7 * 60 + index * 30;
-    const hour = Math.floor(totalMinutes / 60);
-    const minute = totalMinutes % 60;
-
-    const optionValue = `${String(hour).padStart(2, '0')}:${String(
-      minute
-    ).padStart(2, '0')}`;
-
-    return {
-      value: optionValue,
-      label: `${optionValue} น.`,
-    };
-  });
-
-  const options = picker.type === 'date' ? dateOptions : timeOptions;
-
   const selectedClass =
     picker.color === 'blue'
       ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100'
       : 'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-100';
+
+  const buttonClass =
+    picker.color === 'blue'
+      ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+      : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200';
+
+  const inputFocusClass =
+    picker.color === 'blue'
+      ? 'focus:border-blue-500 focus:ring-blue-100'
+      : 'focus:border-emerald-500 focus:ring-emerald-100';
 
   return (
     <div className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/50 px-3 pb-3 backdrop-blur-sm sm:items-center sm:py-6">
@@ -173,7 +168,9 @@ function DateTimePickerPopup({
               </h3>
 
               <p className="mt-1 text-xs font-bold text-white/80">
-                แตะรายการที่ต้องการเลือก
+                {picker.type === 'date'
+                  ? 'แตะวันที่ที่ต้องการเลือก'
+                  : 'กำหนดเวลาเองได้ตามต้องการ'}
               </p>
             </div>
 
@@ -188,33 +185,64 @@ function DateTimePickerPopup({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <div
-            className={
-              picker.type === 'time' ? 'grid grid-cols-3 gap-2' : 'space-y-2'
-            }
-          >
-            {options.map((option) => {
-              const isSelected = option.value === value;
+          {picker.type === 'date' ? (
+            <div className="space-y-2">
+              {dateOptions.map((option) => {
+                const isSelected = option.value === value;
 
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onSelect(option.value);
-                    onClose();
-                  }}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm font-black transition ${
-                    isSelected
-                      ? selectedClass
-                      : 'border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100'
-                  } ${picker.type === 'time' ? 'text-center' : 'text-left'}`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      onSelect(option.value);
+                      onClose();
+                    }}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${
+                      isSelected
+                        ? selectedClass
+                        : 'border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-slate-100 bg-slate-50 p-4">
+                <label className="mb-2 block text-sm font-black text-slate-700">
+                  กรอกเวลา
+                </label>
+
+                <input
+                  type="time"
+                  value={customTime}
+                  onChange={(e) => setCustomTime(e.target.value)}
+                  className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition focus:ring-4 ${inputFocusClass}`}
+                />
+
+                <p className="mt-2 text-xs font-bold text-slate-400">
+                  เลือกเวลาได้อิสระ เช่น 09:20, 13:45, 18:10
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customTime) return;
+                  onSelect(customTime);
+                  onClose();
+                }}
+                className={`h-12 w-full rounded-2xl text-sm font-black text-white shadow-lg transition ${buttonClass} ${
+                  !customTime ? 'cursor-not-allowed opacity-50' : ''
+                }`}
+              >
+                ใช้เวลานี้
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="shrink-0 border-t border-slate-100 bg-white p-4">
