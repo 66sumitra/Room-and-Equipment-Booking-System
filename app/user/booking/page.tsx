@@ -16,12 +16,21 @@ import {
   PackageSearch,
 } from 'lucide-react';
 
+type PickerKey = 'borrowDate' | 'borrowTime' | 'returnDate' | 'returnTime';
+
+type ActivePicker = {
+  key: PickerKey;
+  label: string;
+  type: 'date' | 'time';
+  color: 'blue' | 'emerald';
+};
+
 type DateTimeFieldProps = {
   label: string;
   type: 'date' | 'time';
   value: string;
   color: 'blue' | 'emerald';
-  onChange: (value: string) => void;
+  onOpen: () => void;
 };
 
 function DateTimeField({
@@ -29,12 +38,26 @@ function DateTimeField({
   type,
   value,
   color,
-  onChange,
+  onOpen,
 }: DateTimeFieldProps) {
-  const borderClass =
+  const displayValue = (() => {
+    if (!value) return type === 'date' ? 'เลือกวันที่' : 'เลือกเวลา';
+
+    if (type === 'date') {
+      return new Date(`${value}T00:00:00`).toLocaleDateString('th-TH', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+
+    return `${value} น.`;
+  })();
+
+  const colorClass =
     color === 'blue'
-      ? 'border-blue-100 focus:border-blue-500 focus:ring-blue-100'
-      : 'border-emerald-100 focus:border-emerald-500 focus:ring-emerald-100';
+      ? 'border-blue-100 focus:ring-blue-100'
+      : 'border-emerald-100 focus:ring-emerald-100';
 
   return (
     <div>
@@ -46,12 +69,164 @@ function DateTimeField({
         {label}
       </label>
 
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`block h-14 w-full rounded-2xl border bg-white px-4 text-[16px] font-black text-slate-700 outline-none transition focus:ring-4 ${borderClass}`}
-      />
+      <button
+        type="button"
+        onClick={onOpen}
+        className={`flex h-14 w-full items-center justify-between rounded-2xl border bg-white px-4 text-left outline-none transition focus:ring-4 ${colorClass}`}
+      >
+        <span
+          className={`text-[16px] font-black leading-none ${
+            value ? 'text-slate-700' : 'text-slate-400'
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <span className="text-lg text-slate-300">
+          {type === 'date' ? '📅' : '⏰'}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function DateTimePickerPopup({
+  picker,
+  value,
+  onSelect,
+  onClose,
+}: {
+  picker: ActivePicker;
+  value: string;
+  onSelect: (value: string) => void;
+  onClose: () => void;
+}) {
+  const formatDateValue = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = new Date();
+
+  const dateOptions = Array.from({ length: 45 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + index);
+
+    const optionValue = formatDateValue(date);
+
+    const label = date.toLocaleDateString('th-TH', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    return {
+      value: optionValue,
+      label,
+    };
+  });
+
+  const timeOptions = Array.from({ length: 29 }, (_, index) => {
+    const totalMinutes = 7 * 60 + index * 30;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+
+    const optionValue = `${String(hour).padStart(2, '0')}:${String(
+      minute
+    ).padStart(2, '0')}`;
+
+    return {
+      value: optionValue,
+      label: `${optionValue} น.`,
+    };
+  });
+
+  const options = picker.type === 'date' ? dateOptions : timeOptions;
+
+  const selectedClass =
+    picker.color === 'blue'
+      ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100'
+      : 'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-100';
+
+  return (
+    <div className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/50 px-3 pb-3 backdrop-blur-sm sm:items-center sm:py-6">
+      <div className="flex max-h-[82svh] w-full max-w-md flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <div
+          className={`shrink-0 px-5 py-5 text-white ${
+            picker.color === 'blue'
+              ? 'bg-gradient-to-r from-blue-600 to-sky-500'
+              : 'bg-gradient-to-r from-emerald-600 to-teal-500'
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-white/75">
+                เลือกข้อมูล
+              </p>
+
+              <h3 className="mt-1 text-xl font-black leading-tight">
+                {picker.label}
+              </h3>
+
+              <p className="mt-1 text-xs font-bold text-white/80">
+                แตะรายการที่ต้องการเลือก
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-2xl font-black text-white"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div
+            className={
+              picker.type === 'time' ? 'grid grid-cols-3 gap-2' : 'space-y-2'
+            }
+          >
+            {options.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onSelect(option.value);
+                    onClose();
+                  }}
+                  className={`w-full rounded-2xl border px-4 py-3 text-sm font-black transition ${
+                    isSelected
+                      ? selectedClass
+                      : 'border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  } ${picker.type === 'time' ? 'text-center' : 'text-left'}`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-slate-100 bg-white p-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 w-full rounded-2xl bg-slate-100 text-sm font-black text-slate-500"
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -64,6 +239,8 @@ export default function BookingPage() {
 
   const [showWarning, setShowWarning] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
+
+  const [activePicker, setActivePicker] = useState<ActivePicker | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -566,8 +743,13 @@ export default function BookingPage() {
                       type="date"
                       value={form.borrowDate}
                       color="blue"
-                      onChange={(value) =>
-                        setForm({ ...form, borrowDate: value })
+                      onOpen={() =>
+                        setActivePicker({
+                          key: 'borrowDate',
+                          label: 'วันที่เริ่มยืม',
+                          type: 'date',
+                          color: 'blue',
+                        })
                       }
                     />
 
@@ -576,8 +758,13 @@ export default function BookingPage() {
                       type="time"
                       value={form.borrowTime}
                       color="blue"
-                      onChange={(value) =>
-                        setForm({ ...form, borrowTime: value })
+                      onOpen={() =>
+                        setActivePicker({
+                          key: 'borrowTime',
+                          label: 'เวลาเริ่มยืม',
+                          type: 'time',
+                          color: 'blue',
+                        })
                       }
                     />
                   </div>
@@ -594,8 +781,13 @@ export default function BookingPage() {
                       type="date"
                       value={form.returnDate}
                       color="emerald"
-                      onChange={(value) =>
-                        setForm({ ...form, returnDate: value })
+                      onOpen={() =>
+                        setActivePicker({
+                          key: 'returnDate',
+                          label: 'วันที่คืน',
+                          type: 'date',
+                          color: 'emerald',
+                        })
                       }
                     />
 
@@ -604,8 +796,13 @@ export default function BookingPage() {
                       type="time"
                       value={form.returnTime}
                       color="emerald"
-                      onChange={(value) =>
-                        setForm({ ...form, returnTime: value })
+                      onOpen={() =>
+                        setActivePicker({
+                          key: 'returnTime',
+                          label: 'เวลาคืน',
+                          type: 'time',
+                          color: 'emerald',
+                        })
                       }
                     />
                   </div>
@@ -686,6 +883,20 @@ export default function BookingPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {activePicker && (
+        <DateTimePickerPopup
+          picker={activePicker}
+          value={form[activePicker.key]}
+          onSelect={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              [activePicker.key]: value,
+            }))
+          }
+          onClose={() => setActivePicker(null)}
+        />
       )}
 
       <Modal isOpen={showWarning} onClose={() => setShowWarning(false)} title="">
