@@ -142,28 +142,28 @@ export function Header({ title, actionButton }: HeaderProps) {
   };
 
   return (
-    <header className="relative border-b border-slate-100 bg-white px-4 py-4 md:px-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <header className="relative border-b border-slate-100 bg-white px-4 py-3 md:px-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <h1 className="break-words text-3xl font-black leading-tight text-slate-800 md:text-2xl lg:text-3xl">
+          <h1 className="break-words text-2xl font-black leading-tight text-slate-800 md:text-2xl lg:text-3xl">
             {title}
           </h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 md:justify-end">
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
           {actionButton && <div>{actionButton}</div>}
 
           <div ref={dropdownRef} className="relative">
             <button
               type="button"
               onClick={() => setOpenNotification((prev) => !prev)}
-              className="relative flex h-16 w-16 items-center justify-center rounded-[1.4rem] border border-slate-100 bg-white text-slate-600 shadow-lg shadow-slate-200/60 transition hover:-translate-y-0.5 hover:text-blue-600 md:h-14 md:w-14"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-600 shadow-sm shadow-slate-200/60 transition hover:text-blue-600 md:h-11 md:w-11"
               aria-label="เปิดการแจ้งเตือน"
             >
-              <Bell size={28} strokeWidth={2.3} />
+              <Bell size={20} strokeWidth={2.3} />
 
               {notifications.length > 0 && (
-                <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-black text-white shadow-md">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white shadow-md">
                   {notifications.length > 9 ? '9+' : notifications.length}
                 </span>
               )}
@@ -172,7 +172,7 @@ export function Header({ title, actionButton }: HeaderProps) {
             {openNotification && (
               <div
                 className="
-                  fixed left-3 right-3 top-32 z-[9999]
+                  fixed left-3 right-3 top-28 z-[9999]
                   max-h-[65vh] overflow-hidden rounded-[1.5rem]
                   border border-slate-100 bg-white shadow-2xl shadow-slate-900/20
                   md:absolute md:left-auto md:right-0 md:top-[calc(100%+12px)]
@@ -257,16 +257,16 @@ export function Header({ title, actionButton }: HeaderProps) {
             )}
           </div>
 
-          <div className="flex min-w-0 items-center gap-3 rounded-[1.4rem] border border-slate-100 bg-white px-4 py-3 shadow-lg shadow-slate-200/60">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-              <UserCircle size={34} />
+          <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm shadow-slate-200/60">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <UserCircle size={25} />
             </div>
 
             <div className="min-w-0">
-              <p className="max-w-[150px] truncate text-xl font-black leading-tight text-slate-800 md:max-w-[180px] md:text-lg">
+              <p className="max-w-[115px] truncate text-sm font-black leading-tight text-slate-800 md:max-w-[140px]">
                 {displayName}
               </p>
-              <p className={`text-sm font-black leading-tight ${getRoleColor()}`}>
+              <p className={`text-[11px] font-black leading-tight ${getRoleColor()}`}>
                 {getRoleText()}
               </p>
             </div>
