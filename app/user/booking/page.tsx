@@ -480,130 +480,200 @@ export default function BookingPage() {
         )}
       </div>
 
-      <Modal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        title={`📌 ขอยืม: ${selected?.name || ''}`}
-      >
-        <div className="space-y-5 pt-4 font-bold text-black">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
-              <label className="block text-[11px] font-black uppercase text-blue-500">
-                วันที่เริ่มยืม
-              </label>
-              <input
-                type="date"
-                className="h-11 w-full rounded-xl border-2 border-blue-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
-                value={form.borrowDate}
-                onChange={(e) =>
-                  setForm({ ...form, borrowDate: e.target.value })
-                }
-              />
+      {open && (
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-slate-950/60 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-4">
+          <div className="relative flex max-h-[92svh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl sm:max-h-[88vh]">
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 px-5 py-5 text-white sm:px-7">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+                aria-label="ปิดหน้าต่าง"
+              >
+                ✕
+              </button>
 
-              <label className="block text-[11px] font-black uppercase text-blue-500">
-                เวลาเริ่มยืม
-              </label>
-              <input
-                type="time"
-                className="h-11 w-full rounded-xl border-2 border-blue-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
-                value={form.borrowTime}
-                onChange={(e) =>
-                  setForm({ ...form, borrowTime: e.target.value })
-                }
-              />
+              <p className="mb-1 text-xs font-black uppercase tracking-widest text-white/80">
+                แบบฟอร์มขอยืมอุปกรณ์
+              </p>
+
+              <h2 className="pr-10 text-xl font-black leading-snug sm:text-2xl">
+                {selected?.name || 'อุปกรณ์'}
+              </h2>
+
+              <p className="mt-2 text-xs font-bold text-white/80">
+                กรุณากรอกวัน เวลา และเหตุผลการยืมให้ครบถ้วน
+              </p>
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
-              <label className="block text-[11px] font-black uppercase text-emerald-500">
-                วันที่คืน
-              </label>
-              <input
-                type="date"
-                className="h-11 w-full rounded-xl border-2 border-emerald-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-emerald-500"
-                value={form.returnDate}
-                onChange={(e) =>
-                  setForm({ ...form, returnDate: e.target.value })
-                }
-              />
+            <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+              <div className="space-y-5 font-bold text-slate-800">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/60 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                        📅
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-blue-700">
+                          วันเริ่มยืม
+                        </p>
+                        <p className="text-[11px] font-bold text-blue-400">
+                          เลือกวันและเวลาเริ่มใช้งาน
+                        </p>
+                      </div>
+                    </div>
 
-              <label className="block text-[11px] font-black uppercase text-emerald-500">
-                เวลาคืน
-              </label>
-              <input
-                type="time"
-                className="h-11 w-full rounded-xl border-2 border-emerald-100 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-emerald-500"
-                value={form.returnTime}
-                onChange={(e) =>
-                  setForm({ ...form, returnTime: e.target.value })
-                }
-              />
-            </div>
-          </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-black text-blue-500">
+                          วันที่เริ่มยืม
+                        </label>
+                        <input
+                          type="date"
+                          className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          value={form.borrowDate}
+                          onChange={(e) =>
+                            setForm({ ...form, borrowDate: e.target.value })
+                          }
+                        />
+                      </div>
 
-          <div className="space-y-1">
-            <label className="ml-1 text-[11px] font-black uppercase text-slate-400">
-              เหตุผลการยืม
-            </label>
-            <textarea
-              className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 p-4 text-sm font-bold"
-              rows={3}
-              placeholder="ระบุเหตุผลความจำเป็น..."
-              value={form.reason}
-              onChange={(e) => setForm({ ...form, reason: e.target.value })}
-            />
-          </div>
+                      <div>
+                        <label className="mb-1.5 block text-xs font-black text-blue-500">
+                          เวลาเริ่มยืม
+                        </label>
+                        <input
+                          type="time"
+                          className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          value={form.borrowTime}
+                          onChange={(e) =>
+                            setForm({ ...form, borrowTime: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                <AlertCircle size={22} />
+                  <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/60 p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                        ✅
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-emerald-700">
+                          วันคืน
+                        </p>
+                        <p className="text-[11px] font-bold text-emerald-500">
+                          เลือกวันและเวลาที่จะคืน
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-black text-emerald-600">
+                          วันที่คืน
+                        </label>
+                        <input
+                          type="date"
+                          className="h-12 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                          value={form.returnDate}
+                          onChange={(e) =>
+                            setForm({ ...form, returnDate: e.target.value })
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-xs font-black text-emerald-600">
+                          เวลาคืน
+                        </label>
+                        <input
+                          type="time"
+                          className="h-12 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                          value={form.returnTime}
+                          onChange={(e) =>
+                            setForm({ ...form, returnTime: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-black text-slate-700">
+                    เหตุผลการยืม <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    className="min-h-28 w-full resize-none rounded-[1.4rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold leading-relaxed text-slate-700 outline-none placeholder:text-slate-400 transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    placeholder="เช่น ใช้ทำโครงงาน ใช้เรียนวิชา ใช้ทดสอบอุปกรณ์..."
+                    value={form.reason}
+                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                  />
+                </div>
+
+                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                      <AlertCircle size={21} />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-black text-amber-700">
+                        หมายเหตุการคืนอุปกรณ์
+                      </p>
+                      <p className="mt-1 text-xs font-bold leading-relaxed text-amber-700/80">
+                        กรุณาคืนอุปกรณ์ภายในวันและเวลาที่กำหนด หากคืนล่าช้าหรือไม่คืนตามกำหนด
+                        อาจมีค่าปรับหรือดำเนินการตามระเบียบของหน่วยงาน
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <label className="flex cursor-pointer items-start gap-3 rounded-[1.4rem] border border-red-100 bg-red-50 p-4 transition hover:border-red-200">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0 accent-red-500"
+                    checked={form.urgent}
+                    onChange={(e) =>
+                      setForm({ ...form, urgent: e.target.checked })
+                    }
+                  />
+
+                  <div>
+                    <p className="text-sm font-black text-red-600">
+                      เคสเร่งด่วน
+                    </p>
+                    <p className="mt-1 text-xs font-bold leading-relaxed text-red-400">
+                      เลือกช่องนี้หากต้องการใช้งานอุปกรณ์ทันทีหรือมีความจำเป็นเร่งด่วน
+                    </p>
+                  </div>
+                </label>
               </div>
-
-              <div>
-                <p className="text-sm font-black text-amber-700">
-                  หมายเหตุการคืนอุปกรณ์
-                </p>
-                <p className="mt-1 text-xs font-bold leading-relaxed text-amber-700/80">
-                  กรุณาคืนอุปกรณ์ภายในวันและเวลาที่กำหนด หากคืนล่าช้าหรือไม่คืนตามกำหนด
-                  อาจมีค่าปรับหรือดำเนินการตามระเบียบของหน่วยงาน
-                </p>
-              </div>
             </div>
-          </div>
 
-          <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-red-100 bg-red-50/50 p-4">
-            <input
-              type="checkbox"
-              className="h-5 w-5 accent-red-500"
-              checked={form.urgent}
-              onChange={(e) => setForm({ ...form, urgent: e.target.checked })}
-            />
-            <div className="flex flex-col">
-              <span className="text-xs font-black uppercase italic text-red-600">
-                เคสเร่งด่วน!
-              </span>
-              <span className="text-[10px] text-red-400">
-                ระบุหากต้องใช้งานทันที
-              </span>
+            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:px-7">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="h-12 rounded-2xl bg-slate-100 text-sm font-black text-slate-500 transition hover:bg-slate-200"
+              >
+                ยกเลิก
+              </button>
+
+              <button
+                type="button"
+                onClick={submitBorrow}
+                className="h-12 rounded-2xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 active:scale-95"
+              >
+                ยืนยัน
+              </button>
             </div>
-          </label>
-
-          <div className="flex gap-4 pt-4">
-            <Button
-              className="flex-1 rounded-xl bg-slate-300 py-3 text-xs font-black text-slate-500"
-              onClick={() => setOpen(false)}
-            >
-              ยกเลิก
-            </Button>
-            <Button
-              className="flex-[2] rounded-xl bg-blue-600 py-3 text-xs font-black text-white shadow-lg"
-              onClick={submitBorrow}
-            >
-              ยืนยัน
-            </Button>
           </div>
         </div>
-      </Modal>
+      )}
 
       <Modal isOpen={showWarning} onClose={() => setShowWarning(false)} title="">
         <div className="flex flex-col items-center justify-center py-8 text-center font-bold">
