@@ -16,6 +16,67 @@ import {
   PackageSearch,
 } from 'lucide-react';
 
+type DateTimeFieldProps = {
+  label: string;
+  type: 'date' | 'time';
+  value: string;
+  color: 'blue' | 'emerald';
+  onChange: (value: string) => void;
+};
+
+function DateTimeField({ label, type, value, color, onChange }: DateTimeFieldProps) {
+  const displayValue = (() => {
+    if (!value) return type === 'date' ? 'เลือกวันที่' : 'เลือกเวลา';
+
+    if (type === 'date') {
+      return new Date(`${value}T00:00:00`).toLocaleDateString('th-TH', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+
+    return value;
+  })();
+
+  const colorClass =
+    color === 'blue'
+      ? 'border-blue-100 text-blue-500 focus-within:border-blue-500 focus-within:ring-blue-100'
+      : 'border-emerald-100 text-emerald-600 focus-within:border-emerald-500 focus-within:ring-emerald-100';
+
+  return (
+    <div>
+      <label
+        className={`mb-2 block text-sm font-black ${
+          color === 'blue' ? 'text-blue-500' : 'text-emerald-600'
+        }`}
+      >
+        {label}
+      </label>
+
+      <div
+        className={`relative flex h-14 w-full items-center rounded-2xl border bg-white px-4 ring-0 transition focus-within:ring-4 ${colorClass}`}
+      >
+        <span
+          className={`pointer-events-none flex h-full items-center text-[16px] font-black leading-none ${
+            value ? 'text-slate-700' : 'text-slate-400'
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+          aria-label={label}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function BookingPage() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
@@ -521,33 +582,25 @@ export default function BookingPage() {
                   </p>
 
                   <div className="space-y-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-black text-blue-500">
-                        วันที่เริ่มยืม
-                      </label>
-                      <input
-                        type="date"
-                        value={form.borrowDate}
-                        onChange={(e) =>
-                          setForm({ ...form, borrowDate: e.target.value })
-                        }
-                        className="date-time-input block h-14 w-full rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                      />
-                    </div>
+                    <DateTimeField
+                      label="วันที่เริ่มยืม"
+                      type="date"
+                      value={form.borrowDate}
+                      color="blue"
+                      onChange={(value) =>
+                        setForm({ ...form, borrowDate: value })
+                      }
+                    />
 
-                    <div>
-                      <label className="mb-2 block text-sm font-black text-blue-500">
-                        เวลาเริ่มยืม
-                      </label>
-                      <input
-                        type="time"
-                        value={form.borrowTime}
-                        onChange={(e) =>
-                          setForm({ ...form, borrowTime: e.target.value })
-                        }
-                        className="date-time-input block h-14 w-full rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                      />
-                    </div>
+                    <DateTimeField
+                      label="เวลาเริ่มยืม"
+                      type="time"
+                      value={form.borrowTime}
+                      color="blue"
+                      onChange={(value) =>
+                        setForm({ ...form, borrowTime: value })
+                      }
+                    />
                   </div>
                 </div>
 
@@ -557,33 +610,25 @@ export default function BookingPage() {
                   </p>
 
                   <div className="space-y-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-black text-emerald-600">
-                        วันที่คืน
-                      </label>
-                      <input
-                        type="date"
-                        value={form.returnDate}
-                        onChange={(e) =>
-                          setForm({ ...form, returnDate: e.target.value })
-                        }
-                        className="date-time-input block h-14 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                      />
-                    </div>
+                    <DateTimeField
+                      label="วันที่คืน"
+                      type="date"
+                      value={form.returnDate}
+                      color="emerald"
+                      onChange={(value) =>
+                        setForm({ ...form, returnDate: value })
+                      }
+                    />
 
-                    <div>
-                      <label className="mb-2 block text-sm font-black text-emerald-600">
-                        เวลาคืน
-                      </label>
-                      <input
-                        type="time"
-                        value={form.returnTime}
-                        onChange={(e) =>
-                          setForm({ ...form, returnTime: e.target.value })
-                        }
-                        className="date-time-input block h-14 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                      />
-                    </div>
+                    <DateTimeField
+                      label="เวลาคืน"
+                      type="time"
+                      value={form.returnTime}
+                      color="emerald"
+                      onChange={(value) =>
+                        setForm({ ...form, returnTime: value })
+                      }
+                    />
                   </div>
                 </div>
 
@@ -731,24 +776,6 @@ export default function BookingPage() {
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
-        }
-
-        .date-time-input {
-          min-width: 0;
-          max-width: 100%;
-          line-height: normal;
-          -webkit-appearance: none;
-          appearance: none;
-          box-sizing: border-box;
-        }
-
-        .date-time-input::-webkit-date-and-time-value {
-          min-height: 1.5em;
-          text-align: left;
-        }
-
-        .date-time-input::-webkit-calendar-picker-indicator {
-          opacity: 0.75;
         }
       `}</style>
     </DashboardLayout>
