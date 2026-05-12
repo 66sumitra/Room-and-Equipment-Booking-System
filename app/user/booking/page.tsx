@@ -493,7 +493,7 @@ export default function BookingPage() {
                     แบบฟอร์มขอยืมอุปกรณ์
                   </p>
 
-                  <h2 className="mt-2 line-clamp-3 text-[24px] font-black leading-snug">
+                  <h2 className="mt-2 line-clamp-3 text-[23px] font-black leading-snug">
                     {selected?.name || 'อุปกรณ์'}
                   </h2>
 
@@ -531,7 +531,7 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, borrowDate: e.target.value })
                         }
-                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="date-time-input block h-14 w-full rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
 
@@ -545,7 +545,7 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, borrowTime: e.target.value })
                         }
-                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="date-time-input block h-14 w-full rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
                   </div>
@@ -567,7 +567,7 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, returnDate: e.target.value })
                         }
-                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        className="date-time-input block h-14 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
 
@@ -581,7 +581,7 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, returnTime: e.target.value })
                         }
-                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        className="date-time-input block h-14 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
                   </div>
@@ -727,9 +727,28 @@ export default function BookingPage() {
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
+
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+
+        .date-time-input {
+          min-width: 0;
+          max-width: 100%;
+          line-height: normal;
+          -webkit-appearance: none;
+          appearance: none;
+          box-sizing: border-box;
+        }
+
+        .date-time-input::-webkit-date-and-time-value {
+          min-height: 1.5em;
+          text-align: left;
+        }
+
+        .date-time-input::-webkit-calendar-picker-indicator {
+          opacity: 0.75;
         }
       `}</style>
     </DashboardLayout>
