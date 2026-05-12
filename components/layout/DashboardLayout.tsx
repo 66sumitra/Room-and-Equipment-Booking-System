@@ -45,6 +45,35 @@ export function DashboardLayout({
     }
   }, [user, userRole, loading, allowedRoles, router]);
 
+  const sendEmail = async (
+    to: string | null | undefined,
+    subject: string,
+    message: string
+  ) => {
+    if (!to) return;
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('send due email error:', errorData);
+      }
+    } catch (error) {
+      console.error('send due email failed:', error);
+    }
+  };
+
   const isSameDate = (dateA: Date, dateB: Date) => {
     return (
       dateA.getFullYear() === dateB.getFullYear() &&
@@ -127,6 +156,10 @@ export function DashboardLayout({
     return item.equipment?.name || 'อุปกรณ์';
   };
 
+  const getItemTypeText = (item: any) => {
+    return item.request_type === 'computer' ? 'คอมพิวเตอร์' : 'อุปกรณ์';
+  };
+
   const formatThaiDateTime = (date: string) => {
     return new Date(date).toLocaleString('th-TH', {
       day: '2-digit',
@@ -195,6 +228,60 @@ export function DashboardLayout({
       default:
         return `${userEmailText} ต้องคืน ${itemName} ภายใน ${dueDateText}`;
     }
+  };
+
+  const getEmailSubject = (type: string, itemName: string) => {
+    switch (type) {
+      case 'overdue':
+        return `เกินกำหนดคืนแล้ว - ${itemName}`;
+      case 'due_1_day_before':
+        return `แจ้งเตือน: พรุ่งนี้ถึงกำหนดคืน - ${itemName}`;
+      case 'due_today_morning':
+        return `แจ้งเตือน: วันนี้ถึงกำหนดคืน - ${itemName}`;
+      case 'due_15_min':
+        return `แจ้งเตือน: ใกล้ถึงกำหนดคืนใน 15 นาที - ${itemName}`;
+      default:
+        return `แจ้งเตือนกำหนดคืน - ${itemName}`;
+    }
+  };
+
+  const getUserEmailBody = (
+    type: string,
+    item: any,
+    itemName: string,
+    returnDate: string
+  ) => {
+    const dueDateText = formatThaiDateTime(returnDate);
+    const itemTypeText = getItemTypeText(item);
+    const message = getUserDueMessage(type, itemName, returnDate);
+
+    return `${message}
+
+รายการ: ${itemName}
+ประเภท: ${itemTypeText}
+กำหนดคืน: ${dueDateText}
+
+กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดหรือดำเนินการแจ้งคืน`;
+  };
+
+  const getAdminEmailBody = (
+    type: string,
+    item: any,
+    adminMessage: string,
+    itemName: string,
+    returnDate: string
+  ) => {
+    const dueDateText = formatThaiDateTime(returnDate);
+    const itemTypeText = getItemTypeText(item);
+
+    return `${adminMessage}
+
+ผู้ใช้: ${item.user_email}
+รายการ: ${itemName}
+ประเภท: ${itemTypeText}
+กำหนดคืน: ${dueDateText}
+
+กรุณาเข้าสู่ระบบเพื่อตรวจสอบรายการ`;
   };
 
   const checkDueReturnNotifications = async () => {
@@ -271,6 +358,11 @@ export function DashboardLayout({
     }
 
     const rowsToInsert: any[] = [];
+    const emailsToSend: {
+      to: string;
+      subject: string;
+      message: string;
+    }[] = [];
 
     dueRequests.forEach((item: any) => {
       const itemName = getItemName(item);
@@ -294,6 +386,17 @@ export function DashboardLayout({
           type: item.dueType,
           related_request_id: item.id,
         });
+
+        emailsToSend.push({
+          to: item.user_email,
+          subject: getEmailSubject(item.dueType, itemName),
+          message: getUserEmailBody(
+            item.dueType,
+            item,
+            itemName,
+            item.return_date
+          ),
+        });
       }
 
       if (userRole === 'admin') {
@@ -303,20 +406,36 @@ export function DashboardLayout({
           if (!newSet.has(adminKey)) {
             newSet.add(adminKey);
 
+            const adminTitle =
+              item.dueType === 'overdue'
+                ? 'มีรายการเกินกำหนดคืน'
+                : 'แจ้งเตือนรายการใกล้ถึงกำหนดคืน';
+
+            const adminMessage = getAdminDueMessage(
+              item.dueType,
+              item.user_email,
+              itemName,
+              item.return_date
+            );
+
             rowsToInsert.push({
               user_email: adminEmail,
-              title:
-                item.dueType === 'overdue'
-                  ? 'มีรายการเกินกำหนดคืน'
-                  : 'แจ้งเตือนรายการใกล้ถึงกำหนดคืน',
-              message: getAdminDueMessage(
+              title: adminTitle,
+              message: adminMessage,
+              type: item.dueType,
+              related_request_id: item.id,
+            });
+
+            emailsToSend.push({
+              to: adminEmail,
+              subject: adminTitle,
+              message: getAdminEmailBody(
                 item.dueType,
-                item.user_email,
+                item,
+                adminMessage,
                 itemName,
                 item.return_date
               ),
-              type: item.dueType,
-              related_request_id: item.id,
             });
           }
         });
@@ -324,7 +443,20 @@ export function DashboardLayout({
     });
 
     if (rowsToInsert.length > 0) {
-      await supabase.from('notifications').insert(rowsToInsert);
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(rowsToInsert);
+
+      if (insertError) {
+        console.error('insert due notifications error:', insertError.message);
+        return;
+      }
+
+      await Promise.all(
+        emailsToSend.map((email) =>
+          sendEmail(email.to, email.subject, email.message)
+        )
+      );
     }
   };
 
