@@ -140,7 +140,9 @@ export default function BookingPage() {
 
   const categories = [
     'all',
-    ...Array.from(new Set(equipment.map((item) => item.category).filter(Boolean))),
+    ...Array.from(
+      new Set(equipment.map((item) => item.category).filter(Boolean))
+    ),
   ];
 
   const filteredEquipment = equipment.filter((item) => {
@@ -309,6 +311,7 @@ export default function BookingPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
               <PackageSearch size={19} />
             </div>
+
             <div>
               <h2 className="text-sm font-black text-slate-800 md:text-base">
                 ค้นหาอุปกรณ์
@@ -481,23 +484,23 @@ export default function BookingPage() {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-slate-950/60 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-4">
-          <div className="relative flex max-h-[92svh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl sm:max-h-[88vh]">
-            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-sky-500 to-teal-500 px-5 py-5 text-white sm:px-7">
+        <div className="fixed inset-0 z-[99999] flex items-end justify-center bg-black/60 px-3 pb-3 pt-10 backdrop-blur-sm sm:items-center sm:px-4">
+          <div className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+            <div className="relative bg-gradient-to-r from-blue-600 to-teal-500 px-5 py-5 text-white">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white"
                 aria-label="ปิดหน้าต่าง"
               >
-                ✕
+                ×
               </button>
 
-              <p className="mb-1 text-xs font-black uppercase tracking-widest text-white/80">
+              <p className="text-[11px] font-black uppercase tracking-widest text-white/80">
                 แบบฟอร์มขอยืมอุปกรณ์
               </p>
 
-              <h2 className="pr-10 text-xl font-black leading-snug sm:text-2xl">
+              <h2 className="mt-2 pr-12 text-xl font-black leading-snug">
                 {selected?.name || 'อุปกรณ์'}
               </h2>
 
@@ -506,98 +509,76 @@ export default function BookingPage() {
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-              <div className="space-y-5 font-bold text-slate-800">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/60 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                        📅
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-blue-700">
-                          วันเริ่มยืม
-                        </p>
-                        <p className="text-[11px] font-bold text-blue-400">
-                          เลือกวันและเวลาเริ่มใช้งาน
-                        </p>
-                      </div>
+            <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+              <div className="space-y-4 font-bold text-slate-800">
+                <div className="rounded-[24px] border border-blue-100 bg-blue-50 p-4">
+                  <p className="mb-4 text-sm font-black text-blue-700">
+                    วันที่และเวลาเริ่มยืม
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="min-w-0">
+                      <label className="mb-2 block text-xs font-black text-blue-500">
+                        วันที่เริ่มยืม
+                      </label>
+                      <input
+                        type="date"
+                        value={form.borrowDate}
+                        onChange={(e) =>
+                          setForm({ ...form, borrowDate: e.target.value })
+                        }
+                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      />
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="mb-1.5 block text-xs font-black text-blue-500">
-                          วันที่เริ่มยืม
-                        </label>
-                        <input
-                          type="date"
-                          className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                          value={form.borrowDate}
-                          onChange={(e) =>
-                            setForm({ ...form, borrowDate: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-1.5 block text-xs font-black text-blue-500">
-                          เวลาเริ่มยืม
-                        </label>
-                        <input
-                          type="time"
-                          className="h-12 w-full rounded-2xl border border-blue-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                          value={form.borrowTime}
-                          onChange={(e) =>
-                            setForm({ ...form, borrowTime: e.target.value })
-                          }
-                        />
-                      </div>
+                    <div className="min-w-0">
+                      <label className="mb-2 block text-xs font-black text-blue-500">
+                        เวลาเริ่มยืม
+                      </label>
+                      <input
+                        type="time"
+                        value={form.borrowTime}
+                        onChange={(e) =>
+                          setForm({ ...form, borrowTime: e.target.value })
+                        }
+                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      />
                     </div>
                   </div>
+                </div>
 
-                  <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/60 p-4">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                        ✅
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-emerald-700">
-                          วันคืน
-                        </p>
-                        <p className="text-[11px] font-bold text-emerald-500">
-                          เลือกวันและเวลาที่จะคืน
-                        </p>
-                      </div>
+                <div className="rounded-[24px] border border-emerald-100 bg-emerald-50 p-4">
+                  <p className="mb-4 text-sm font-black text-emerald-700">
+                    วันที่และเวลาคืน
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="min-w-0">
+                      <label className="mb-2 block text-xs font-black text-emerald-600">
+                        วันที่คืน
+                      </label>
+                      <input
+                        type="date"
+                        value={form.returnDate}
+                        onChange={(e) =>
+                          setForm({ ...form, returnDate: e.target.value })
+                        }
+                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                      />
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="mb-1.5 block text-xs font-black text-emerald-600">
-                          วันที่คืน
-                        </label>
-                        <input
-                          type="date"
-                          className="h-12 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                          value={form.returnDate}
-                          onChange={(e) =>
-                            setForm({ ...form, returnDate: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-1.5 block text-xs font-black text-emerald-600">
-                          เวลาคืน
-                        </label>
-                        <input
-                          type="time"
-                          className="h-12 w-full rounded-2xl border border-emerald-100 bg-white px-4 text-sm font-black text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                          value={form.returnTime}
-                          onChange={(e) =>
-                            setForm({ ...form, returnTime: e.target.value })
-                          }
-                        />
-                      </div>
+                    <div className="min-w-0">
+                      <label className="mb-2 block text-xs font-black text-emerald-600">
+                        เวลาคืน
+                      </label>
+                      <input
+                        type="time"
+                        value={form.returnTime}
+                        onChange={(e) =>
+                          setForm({ ...form, returnTime: e.target.value })
+                        }
+                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                      />
                     </div>
                   </div>
                 </div>
@@ -607,14 +588,16 @@ export default function BookingPage() {
                     เหตุผลการยืม <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    className="min-h-28 w-full resize-none rounded-[1.4rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold leading-relaxed text-slate-700 outline-none placeholder:text-slate-400 transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                    placeholder="เช่น ใช้ทำโครงงาน ใช้เรียนวิชา ใช้ทดสอบอุปกรณ์..."
                     value={form.reason}
-                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, reason: e.target.value })
+                    }
+                    placeholder="เช่น ใช้ทำโครงงาน ใช้เรียนวิชา ใช้ทดสอบอุปกรณ์..."
+                    className="min-h-28 w-full resize-none rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-[16px] font-bold text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
                 </div>
 
-                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 p-4">
+                <div className="rounded-[22px] border border-amber-200 bg-amber-50 p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
                       <AlertCircle size={21} />
@@ -632,7 +615,7 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <label className="flex cursor-pointer items-start gap-3 rounded-[1.4rem] border border-red-100 bg-red-50 p-4 transition hover:border-red-200">
+                <label className="flex cursor-pointer items-start gap-3 rounded-[22px] border border-red-100 bg-red-50 p-4">
                   <input
                     type="checkbox"
                     className="mt-1 h-5 w-5 shrink-0 accent-red-500"
@@ -654,11 +637,11 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:px-7">
+            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 bg-white px-4 py-4">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="h-12 rounded-2xl bg-slate-100 text-sm font-black text-slate-500 transition hover:bg-slate-200"
+                className="h-12 rounded-2xl bg-slate-100 text-sm font-black text-slate-500"
               >
                 ยกเลิก
               </button>
@@ -666,7 +649,7 @@ export default function BookingPage() {
               <button
                 type="button"
                 onClick={submitBorrow}
-                className="h-12 rounded-2xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 active:scale-95"
+                className="h-12 rounded-2xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200"
               >
                 ยืนยัน
               </button>
