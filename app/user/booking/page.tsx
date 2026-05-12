@@ -101,41 +101,70 @@ function DateTimePickerPopup({
   onSelect: (value: string) => void;
   onClose: () => void;
 }) {
-  const [customTime, setCustomTime] = useState(value || '');
-
-  const formatDateValue = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  };
-
   const today = new Date();
+  const initialDate =
+    picker.type === 'date' && value ? new Date(`${value}T00:00:00`) : today;
 
-  const dateOptions = Array.from({ length: 180 }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + index);
+  const [customTime, setCustomTime] = useState(value || '');
+  const [selectedDay, setSelectedDay] = useState(
+    String(initialDate.getDate())
+  );
+  const [selectedMonth, setSelectedMonth] = useState(
+    String(initialDate.getMonth() + 1)
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    String(initialDate.getFullYear())
+  );
 
-    const optionValue = formatDateValue(date);
+  const thaiMonths = [
+    { value: '1', label: 'มกราคม' },
+    { value: '2', label: 'กุมภาพันธ์' },
+    { value: '3', label: 'มีนาคม' },
+    { value: '4', label: 'เมษายน' },
+    { value: '5', label: 'พฤษภาคม' },
+    { value: '6', label: 'มิถุนายน' },
+    { value: '7', label: 'กรกฎาคม' },
+    { value: '8', label: 'สิงหาคม' },
+    { value: '9', label: 'กันยายน' },
+    { value: '10', label: 'ตุลาคม' },
+    { value: '11', label: 'พฤศจิกายน' },
+    { value: '12', label: 'ธันวาคม' },
+  ];
 
-    const label = date.toLocaleDateString('th-TH', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+  const currentYear = today.getFullYear();
+  const yearOptions = Array.from({ length: 4 }, (_, index) => currentYear + index);
 
-    return {
-      value: optionValue,
-      label,
-    };
+  const daysInSelectedMonth = new Date(
+    Number(selectedYear),
+    Number(selectedMonth),
+    0
+  ).getDate();
+
+  const dayOptions = Array.from({ length: daysInSelectedMonth }, (_, index) => {
+    return String(index + 1);
   });
 
-  const selectedClass =
-    picker.color === 'blue'
-      ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-100'
-      : 'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-100';
+  useEffect(() => {
+    if (Number(selectedDay) > daysInSelectedMonth) {
+      setSelectedDay(String(daysInSelectedMonth));
+    }
+  }, [daysInSelectedMonth, selectedDay]);
+
+  const formatSelectedDateValue = () => {
+    const month = String(selectedMonth).padStart(2, '0');
+    const day = String(selectedDay).padStart(2, '0');
+
+    return `${selectedYear}-${month}-${day}`;
+  };
+
+  const selectedDatePreview = new Date(
+    `${formatSelectedDateValue()}T00:00:00`
+  ).toLocaleDateString('th-TH', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 
   const buttonClass =
     picker.color === 'blue'
@@ -169,7 +198,7 @@ function DateTimePickerPopup({
 
               <p className="mt-1 text-xs font-bold text-white/80">
                 {picker.type === 'date'
-                  ? 'แตะวันที่ที่ต้องการเลือก'
+                  ? 'เลือกวัน เดือน ปี ได้เอง'
                   : 'กำหนดเวลาเองได้ตามต้องการ'}
               </p>
             </div>
@@ -186,28 +215,85 @@ function DateTimePickerPopup({
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {picker.type === 'date' ? (
-            <div className="space-y-2">
-              {dateOptions.map((option) => {
-                const isSelected = option.value === value;
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-slate-100 bg-slate-50 p-4">
+                <p className="mb-3 text-sm font-black text-slate-700">
+                  เลือกวันที่
+                </p>
 
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      onSelect(option.value);
-                      onClose();
-                    }}
-                    className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${
-                      isSelected
-                        ? selectedClass
-                        : 'border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-black text-slate-400">
+                      วัน
+                    </label>
+                    <select
+                      value={selectedDay}
+                      onChange={(e) => setSelectedDay(e.target.value)}
+                      className={`h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:ring-4 ${inputFocusClass}`}
+                    >
+                      {dayOptions.map((day) => (
+                        <option key={day} value={day}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-black text-slate-400">
+                      เดือน
+                    </label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className={`h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:ring-4 ${inputFocusClass}`}
+                    >
+                      {thaiMonths.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] font-black text-slate-400">
+                      ปี
+                    </label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className={`h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:ring-4 ${inputFocusClass}`}
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year + 543}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-white px-4 py-3 text-center">
+                  <p className="text-xs font-bold text-slate-400">
+                    วันที่ที่เลือก
+                  </p>
+                  <p className="mt-1 text-sm font-black text-slate-700">
+                    {selectedDatePreview}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(formatSelectedDateValue());
+                  onClose();
+                }}
+                className={`h-12 w-full rounded-2xl text-sm font-black text-white shadow-lg transition ${buttonClass}`}
+              >
+                ใช้วันที่นี้
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
