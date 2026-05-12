@@ -19,6 +19,7 @@ type NotificationItem = {
   type?: string | null;
   related_request_id?: string | null;
   created_at?: string | null;
+  is_read?: boolean | null;
 };
 
 export function Header({ title, actionButton }: HeaderProps) {
@@ -45,6 +46,7 @@ export function Header({ title, actionButton }: HeaderProps) {
       .from('notifications')
       .select('*')
       .eq('user_email', userEmail)
+      .eq('is_read', false)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -99,11 +101,14 @@ export function Header({ title, actionButton }: HeaderProps) {
     };
   }, []);
 
-  const deleteNotificationById = async (id: string) => {
-    const { error } = await supabase.from('notifications').delete().eq('id', id);
+  const markNotificationAsRead = async (id: string) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id);
 
     if (error) {
-      console.error('delete notification error:', error.message);
+      console.error('mark notification read error:', error.message);
       return false;
     }
 
@@ -114,10 +119,8 @@ export function Header({ title, actionButton }: HeaderProps) {
   const handleNotificationClick = async (item: NotificationItem) => {
     setOpenNotification(false);
 
-    // อ่านแล้วให้ลบออกจากตาราง notifications เลย
-    // พอเปลี่ยนหน้า/รีเฟรช จะไม่เด้งแจ้งเตือนเดิมซ้ำอีก
     if (item.id) {
-      await deleteNotificationById(item.id);
+      await markNotificationAsRead(item.id);
     }
 
     if (userRole === 'admin') {
@@ -138,8 +141,9 @@ export function Header({ title, actionButton }: HeaderProps) {
 
     const { error } = await supabase
       .from('notifications')
-      .delete()
-      .eq('user_email', userEmail);
+      .update({ is_read: true })
+      .eq('user_email', userEmail)
+      .eq('is_read', false);
 
     if (error) {
       console.error('clear notifications error:', error.message);
@@ -203,7 +207,7 @@ export function Header({ title, actionButton }: HeaderProps) {
                       การแจ้งเตือน
                     </h2>
                     <p className="text-xs font-bold text-slate-400">
-                      ทั้งหมด {notifications.length} รายการ
+                      ยังไม่ได้อ่าน {notifications.length} รายการ
                     </p>
                   </div>
 
