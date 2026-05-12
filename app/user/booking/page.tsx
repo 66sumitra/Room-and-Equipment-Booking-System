@@ -484,41 +484,45 @@ export default function BookingPage() {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[99999] flex items-end justify-center bg-black/60 px-3 pb-3 pt-10 backdrop-blur-sm sm:items-center sm:px-4">
-          <div className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-            <div className="relative bg-gradient-to-r from-blue-600 to-teal-500 px-5 py-5 text-white">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white"
-                aria-label="ปิดหน้าต่าง"
-              >
-                ×
-              </button>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
+          <div className="flex h-[86svh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+            <div className="shrink-0 bg-gradient-to-r from-blue-600 to-teal-500 px-5 py-5 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-white/80">
+                    แบบฟอร์มขอยืมอุปกรณ์
+                  </p>
 
-              <p className="text-[11px] font-black uppercase tracking-widest text-white/80">
-                แบบฟอร์มขอยืมอุปกรณ์
-              </p>
+                  <h2 className="mt-2 line-clamp-3 text-[24px] font-black leading-snug">
+                    {selected?.name || 'อุปกรณ์'}
+                  </h2>
 
-              <h2 className="mt-2 pr-12 text-xl font-black leading-snug">
-                {selected?.name || 'อุปกรณ์'}
-              </h2>
+                  <p className="mt-3 text-xs font-bold text-white/85">
+                    กรุณากรอกวัน เวลา และเหตุผลการยืมให้ครบถ้วน
+                  </p>
+                </div>
 
-              <p className="mt-2 text-xs font-bold text-white/80">
-                กรุณากรอกวัน เวลา และเหตุผลการยืมให้ครบถ้วน
-              </p>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-3xl font-bold text-white backdrop-blur transition hover:bg-white/25"
+                  aria-label="ปิดหน้าต่าง"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-              <div className="space-y-4 font-bold text-slate-800">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+              <div className="space-y-5 font-bold text-slate-800">
                 <div className="rounded-[24px] border border-blue-100 bg-blue-50 p-4">
-                  <p className="mb-4 text-sm font-black text-blue-700">
+                  <p className="mb-4 text-base font-black text-blue-700">
                     วันที่และเวลาเริ่มยืม
                   </p>
 
                   <div className="space-y-4">
-                    <div className="min-w-0">
-                      <label className="mb-2 block text-xs font-black text-blue-500">
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-blue-500">
                         วันที่เริ่มยืม
                       </label>
                       <input
@@ -527,12 +531,12 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, borrowDate: e.target.value })
                         }
-                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
 
-                    <div className="min-w-0">
-                      <label className="mb-2 block text-xs font-black text-blue-500">
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-blue-500">
                         เวลาเริ่มยืม
                       </label>
                       <input
@@ -541,20 +545,20 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, borrowTime: e.target.value })
                         }
-                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-blue-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div className="rounded-[24px] border border-emerald-100 bg-emerald-50 p-4">
-                  <p className="mb-4 text-sm font-black text-emerald-700">
+                  <p className="mb-4 text-base font-black text-emerald-700">
                     วันที่และเวลาคืน
                   </p>
 
                   <div className="space-y-4">
-                    <div className="min-w-0">
-                      <label className="mb-2 block text-xs font-black text-emerald-600">
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-emerald-600">
                         วันที่คืน
                       </label>
                       <input
@@ -563,12 +567,12 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, returnDate: e.target.value })
                         }
-                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
 
-                    <div className="min-w-0">
-                      <label className="mb-2 block text-xs font-black text-emerald-600">
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-emerald-600">
                         เวลาคืน
                       </label>
                       <input
@@ -577,7 +581,7 @@ export default function BookingPage() {
                         onChange={(e) =>
                           setForm({ ...form, returnTime: e.target.value })
                         }
-                        className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[16px] font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        className="block h-14 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-emerald-100 bg-white px-4 text-[17px] font-black text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
                   </div>
@@ -637,22 +641,24 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 bg-white px-4 py-4">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="h-12 rounded-2xl bg-slate-100 text-sm font-black text-slate-500"
-              >
-                ยกเลิก
-              </button>
+            <div className="shrink-0 border-t border-slate-100 bg-white px-5 py-4">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="h-14 rounded-2xl bg-slate-100 text-base font-black text-slate-500 transition hover:bg-slate-200"
+                >
+                  ยกเลิก
+                </button>
 
-              <button
-                type="button"
-                onClick={submitBorrow}
-                className="h-12 rounded-2xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200"
-              >
-                ยืนยัน
-              </button>
+                <button
+                  type="button"
+                  onClick={submitBorrow}
+                  className="h-14 rounded-2xl bg-blue-600 text-base font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 active:scale-95"
+                >
+                  ยืนยัน
+                </button>
+              </div>
             </div>
           </div>
         </div>
