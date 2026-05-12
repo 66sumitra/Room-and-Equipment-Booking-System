@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -31,8 +31,6 @@ function DateTimeField({
   color,
   onChange,
 }: DateTimeFieldProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
   const displayValue = (() => {
     if (!value) return type === 'date' ? 'เลือกวันที่' : 'เลือกเวลา';
 
@@ -49,24 +47,10 @@ function DateTimeField({
 
   const borderClass =
     color === 'blue'
-      ? 'border-blue-100 focus:ring-blue-100'
-      : 'border-emerald-100 focus:ring-emerald-100';
+      ? 'border-blue-100 focus-within:border-blue-500 focus-within:ring-blue-100'
+      : 'border-emerald-100 focus-within:border-emerald-500 focus-within:ring-emerald-100';
 
   const textColor = value ? 'text-slate-700' : 'text-slate-400';
-
-  const openPicker = () => {
-    const input = inputRef.current;
-    if (!input) return;
-
-    input.focus();
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-      return;
-    }
-
-    input.click();
-  };
 
   return (
     <div>
@@ -78,25 +62,23 @@ function DateTimeField({
         {label}
       </label>
 
-      <button
-        type="button"
-        onClick={openPicker}
-        className={`flex h-14 w-full items-center rounded-2xl border bg-white px-4 text-left outline-none transition focus:ring-4 ${borderClass}`}
+      <div
+        className={`relative flex h-14 w-full items-center rounded-2xl border bg-white px-4 ring-0 transition focus-within:ring-4 ${borderClass}`}
       >
-        <span className={`block text-[16px] font-black leading-none ${textColor}`}>
+        <span
+          className={`pointer-events-none flex h-full items-center text-[16px] font-black leading-none ${textColor}`}
+        >
           {displayValue}
         </span>
-      </button>
 
-      <input
-        ref={inputRef}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="fixed -left-[9999px] top-0 h-px w-px opacity-0"
-        tabIndex={-1}
-        aria-hidden="true"
-      />
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+          aria-label={label}
+        />
+      </div>
     </div>
   );
 }
