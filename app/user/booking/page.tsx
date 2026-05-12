@@ -785,7 +785,7 @@ export default function BookingPage() {
 
             <div>
               <p className="text-sm font-black text-amber-700">
-                หมายเหตุการยืม–คืนอุปกรณ์
+                หมายเหตุ : เหตุการยืม–คืนอุปกรณ์
               </p>
               <p className="mt-1 text-xs font-bold leading-relaxed text-amber-700/80">
                 ผู้ใช้งานควรตรวจสอบวันและเวลาคืนก่อนส่งคำขอ และต้องคืนอุปกรณ์ภายในเวลาที่กำหนด
@@ -1035,7 +1035,7 @@ export default function BookingPage() {
 
                     <div>
                       <p className="text-sm font-black text-amber-700">
-                        หมายเหตุการคืนอุปกรณ์
+                        หมายเหตุ : การคืนอุปกรณ์
                       </p>
                       <p className="mt-1 text-xs font-bold leading-relaxed text-amber-700/80">
                         กรุณาคืนอุปกรณ์ภายในวันและเวลาที่กำหนด หากคืนล่าช้าหรือไม่คืนตามกำหนด
