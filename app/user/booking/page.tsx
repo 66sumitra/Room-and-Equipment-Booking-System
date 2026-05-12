@@ -259,6 +259,8 @@ export default function BookingPage() {
 ความเร่งด่วน: ${form.urgent ? 'เร่งด่วน' : 'ปกติ'}
 สถานะ: รออนุมัติ
 
+หมายเหตุ: ผู้ยืมต้องคืนอุปกรณ์ภายในวันและเวลาที่กำหนด หากคืนล่าช้าหรือไม่คืนตามกำหนด อาจมีค่าปรับหรือดำเนินการตามระเบียบของหน่วยงาน
+
 กรุณาเข้าสู่ระบบเพื่อตรวจสอบและอนุมัติคำขอ`
           )
         )
@@ -531,6 +533,24 @@ export default function BookingPage() {
               value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })}
             />
+          </div>
+
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <AlertCircle size={22} />
+              </div>
+
+              <div>
+                <p className="text-sm font-black text-amber-700">
+                  หมายเหตุการคืนอุปกรณ์
+                </p>
+                <p className="mt-1 text-xs font-bold leading-relaxed text-amber-700/80">
+                  กรุณาคืนอุปกรณ์ภายในวันและเวลาที่กำหนด หากคืนล่าช้าหรือไม่คืนตามกำหนด
+                  อาจมีค่าปรับหรือดำเนินการตามระเบียบของหน่วยงาน
+                </p>
+              </div>
+            </div>
           </div>
 
           <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-red-100 bg-red-50/50 p-4">
