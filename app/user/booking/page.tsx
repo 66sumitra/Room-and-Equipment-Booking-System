@@ -33,6 +33,46 @@ type DateTimeFieldProps = {
   onOpen: () => void;
 };
 
+function formatTimeInput(input: string) {
+  let value = input.replace(/[^\d.:]/g, '');
+
+  value = value.replace('.', ':');
+
+  if (/^\d{4}$/.test(value)) {
+    value = `${value.slice(0, 2)}:${value.slice(2, 4)}`;
+  }
+
+  if (/^\d{1}:\d{2}$/.test(value)) {
+    value = `0${value}`;
+  }
+
+  return value;
+}
+
+function isValidTime(time: string) {
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+}
+
+function getThaiTimeText(time: string) {
+  if (!isValidTime(time)) return '';
+
+  const [hourText, minuteText] = time.split(':');
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  const minuteLabel = minute === 0 ? 'ตรง' : `${minute} นาที`;
+
+  if (hour === 0) return `เที่ยงคืน ${minuteLabel}`;
+  if (hour >= 1 && hour <= 5) return `ตี ${hour} ${minuteLabel}`;
+  if (hour >= 6 && hour <= 11) return `${hour} โมงเช้า ${minuteLabel}`;
+  if (hour === 12) return `เที่ยง ${minuteLabel}`;
+  if (hour >= 13 && hour <= 15) return `บ่าย ${hour - 12} โมง ${minuteLabel}`;
+  if (hour >= 16 && hour <= 18) return `${hour - 12} โมงเย็น ${minuteLabel}`;
+  if (hour >= 19 && hour <= 23) return `${hour - 18} ทุ่ม ${minuteLabel}`;
+
+  return '';
+}
+
 function DateTimeField({
   label,
   type,
@@ -106,6 +146,7 @@ function DateTimePickerPopup({
     picker.type === 'date' && value ? new Date(`${value}T00:00:00`) : today;
 
   const [customTime, setCustomTime] = useState(value || '');
+  const [timeError, setTimeError] = useState('');
   const [selectedDay, setSelectedDay] = useState(
     String(initialDate.getDate())
   );
@@ -132,7 +173,10 @@ function DateTimePickerPopup({
   ];
 
   const currentYear = today.getFullYear();
-  const yearOptions = Array.from({ length: 4 }, (_, index) => currentYear + index);
+  const yearOptions = Array.from(
+    { length: 4 },
+    (_, index) => currentYear + index
+  );
 
   const daysInSelectedMonth = new Date(
     Number(selectedYear),
@@ -165,6 +209,9 @@ function DateTimePickerPopup({
     month: 'long',
     year: 'numeric',
   });
+
+  const formattedCustomTime = formatTimeInput(customTime);
+  const timePreview = getThaiTimeText(formattedCustomTime);
 
   const buttonClass =
     picker.color === 'blue'
@@ -199,7 +246,7 @@ function DateTimePickerPopup({
               <p className="mt-1 text-xs font-bold text-white/80">
                 {picker.type === 'date'
                   ? 'เลือกวัน เดือน ปี ได้เอง'
-                  : 'กำหนดเวลาเองได้ตามต้องการ'}
+                  : 'ใช้เวลาแบบ 24 ชั่วโมง ไม่ต้องเลือก AM/PM'}
               </p>
             </div>
 
@@ -303,22 +350,58 @@ function DateTimePickerPopup({
                 </label>
 
                 <input
-                  type="time"
+                  type="text"
+                  inputMode="numeric"
                   value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
-                  className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition focus:ring-4 ${inputFocusClass}`}
+                  onChange={(e) => {
+                    setCustomTime(e.target.value);
+                    setTimeError('');
+                  }}
+                  placeholder="เช่น 09.00, 13.00, 19.00"
+                  className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition placeholder:text-slate-300 focus:ring-4 ${inputFocusClass}`}
                 />
 
                 <p className="mt-2 text-xs font-bold text-slate-400">
-                  เลือกเวลาได้อิสระ เช่น 09:20, 13:45, 18:10
+                  ใช้เวลาแบบ 24 ชั่วโมง เช่น 09.00 = 9 โมงเช้า, 13.00 =
+                  บ่ายโมง, 19.00 = 1 ทุ่ม
                 </p>
+
+                {timePreview && (
+                  <div className="mt-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3">
+                    <p className="text-xs font-bold text-slate-400">
+                      เวลาที่เลือก
+                    </p>
+                    <p className="mt-1 text-base font-black text-emerald-600">
+                      {formattedCustomTime} น. ({timePreview})
+                    </p>
+                  </div>
+                )}
+
+                {timeError && (
+                  <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-xs font-black text-red-500">
+                    {timeError}
+                  </p>
+                )}
               </div>
 
               <button
                 type="button"
                 onClick={() => {
-                  if (!customTime) return;
-                  onSelect(customTime);
+                  const formattedTime = formatTimeInput(customTime);
+
+                  if (!formattedTime) {
+                    setTimeError('กรุณากรอกเวลา');
+                    return;
+                  }
+
+                  if (!isValidTime(formattedTime)) {
+                    setTimeError(
+                      'กรุณากรอกเวลาให้ถูกต้อง เช่น 09.00, 13.00 หรือ 19.00'
+                    );
+                    return;
+                  }
+
+                  onSelect(formattedTime);
                   onClose();
                 }}
                 className={`h-12 w-full rounded-2xl text-sm font-black text-white shadow-lg transition ${buttonClass} ${
@@ -520,8 +603,16 @@ export default function BookingPage() {
       return;
     }
 
-    const borrowDateTime = `${form.borrowDate}T${form.borrowTime}`;
-    const returnDateTime = `${form.returnDate}T${form.returnTime}`;
+    const borrowTimeFormatted = formatTimeInput(form.borrowTime);
+    const returnTimeFormatted = formatTimeInput(form.returnTime);
+
+    if (!isValidTime(borrowTimeFormatted) || !isValidTime(returnTimeFormatted)) {
+      openWarningModal('กรุณากรอกเวลาให้ถูกต้อง เช่น 09.00, 13.00 หรือ 19.00');
+      return;
+    }
+
+    const borrowDateTime = `${form.borrowDate}T${borrowTimeFormatted}`;
+    const returnDateTime = `${form.returnDate}T${returnTimeFormatted}`;
 
     const borrowTimeValue = new Date(borrowDateTime).getTime();
     const returnTimeValue = new Date(returnDateTime).getTime();
