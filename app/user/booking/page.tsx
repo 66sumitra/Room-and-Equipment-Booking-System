@@ -352,6 +352,24 @@ export default function BookingPage() {
           </div>
         </div>
 
+        <div className="rounded-[1.7rem] border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <AlertCircle size={22} />
+            </div>
+
+            <div>
+              <p className="text-sm font-black text-amber-700">
+                หมายเหตุการยืม–คืนอุปกรณ์
+              </p>
+              <p className="mt-1 text-xs font-bold leading-relaxed text-amber-700/80">
+                ผู้ใช้งานควรตรวจสอบวันและเวลาคืนก่อนส่งคำขอ และต้องคืนอุปกรณ์ภายในเวลาที่กำหนด
+                หากคืนล่าช้าหรือไม่คืนตามกำหนด อาจมีค่าปรับหรือดำเนินการตามระเบียบของหน่วยงาน
+              </p>
+            </div>
+          </div>
+        </div>
+
         {filteredEquipment.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
             {filteredEquipment.map((item, index) => (
