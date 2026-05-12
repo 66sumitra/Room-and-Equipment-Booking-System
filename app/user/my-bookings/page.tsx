@@ -103,6 +103,35 @@ export default function MyBookingsPage() {
     }, 2200);
   };
 
+  const sendEmail = async (
+    to: string | null | undefined,
+    subject: string,
+    message: string
+  ) => {
+    if (!to) return;
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('send return request email error:', errorData);
+      }
+    } catch (error) {
+      console.error('send return request email failed:', error);
+    }
+  };
+
   const fetchBookings = async (userEmail: string) => {
     try {
       setLoading(true);
@@ -203,6 +232,7 @@ export default function MyBookingsPage() {
     if (item?.request_type === 'computer') {
       return item.computers?.pc_name || 'ไม่ระบุคอมพิวเตอร์';
     }
+
     return item.equipment?.name || 'ไม่ระบุอุปกรณ์';
   };
 
@@ -210,7 +240,12 @@ export default function MyBookingsPage() {
     if (item?.request_type === 'computer') {
       return item.computers?.room_name || 'ไม่ระบุห้อง';
     }
+
     return item.equipment?.category || 'ไม่ระบุหมวดหมู่';
+  };
+
+  const getRequestTypeText = (item: any) => {
+    return item?.request_type === 'computer' ? 'คอมพิวเตอร์' : 'อุปกรณ์';
   };
 
   const handleRequestReturn = async (item: any) => {
@@ -223,6 +258,8 @@ export default function MyBookingsPage() {
       if (error) throw error;
 
       const itemName = getRequestTitle(item);
+      const itemTypeText = getRequestTypeText(item);
+      const itemSubtitle = getRequestSubtitle(item);
       const userEmail = item.user_email || currentUserEmail;
 
       const { data: admins, error: adminError } = await supabase
@@ -230,17 +267,35 @@ export default function MyBookingsPage() {
         .select('email')
         .eq('role', 'admin');
 
-      if (!adminError && admins && admins.length > 0) {
+      const adminEmails = (admins || [])
+        .map((admin) => admin.email)
+        .filter(Boolean);
+
+      if (!adminError && adminEmails.length > 0) {
         await supabase.from('notifications').insert(
-          admins
-            .filter((admin) => admin.email)
-            .map((admin) => ({
-              user_email: admin.email,
-              title: 'มีคำขอคืนใหม่',
-              message: `${userEmail} ได้ส่งคำขอคืน ${itemName}`,
-              type: 'return_requested',
-              related_request_id: item.id,
-            }))
+          adminEmails.map((adminEmail) => ({
+            user_email: adminEmail,
+            title: 'มีคำขอคืนใหม่',
+            message: `${userEmail} ได้ส่งคำขอคืน ${itemName}`,
+            type: 'return_requested',
+            related_request_id: item.id,
+          }))
+        );
+
+        await Promise.all(
+          adminEmails.map((adminEmail) =>
+            sendEmail(
+              adminEmail,
+              'มีคำขอคืนใหม่',
+              `มีคำขอคืน${itemTypeText}ใหม่จากผู้ใช้ ${userEmail}
+
+รายการที่ขอคืน: ${itemName}
+รายละเอียด: ${itemSubtitle}
+เหตุผลเดิม: ${item.reason || 'ไม่ระบุ'}
+
+กรุณาเข้าสู่ระบบเพื่อตรวจสอบและยืนยันการรับคืน`
+            )
+          )
         );
       }
 
@@ -310,11 +365,11 @@ export default function MyBookingsPage() {
             approvedBookings.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm"
+                className="flex flex-col gap-4 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between"
               >
                 <div className="flex items-center gap-4">
                   <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${
                       item.request_type === 'computer'
                         ? 'bg-blue-50 text-blue-600'
                         : 'bg-indigo-50 text-indigo-600'
@@ -324,7 +379,7 @@ export default function MyBookingsPage() {
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-black text-slate-800">
                         {getRequestTitle(item)}
                       </p>
@@ -356,7 +411,7 @@ export default function MyBookingsPage() {
                 </div>
 
                 <Button
-                  className="rounded-xl bg-red-500 px-5 py-3 text-sm font-black uppercase text-white shadow-lg shadow-red-100"
+                  className="w-full rounded-xl bg-red-500 px-5 py-3 text-sm font-black uppercase text-white shadow-lg shadow-red-100 md:w-auto"
                   onClick={() => handleRequestReturn(item)}
                 >
                   {getRequestButtonText(item)}
@@ -391,10 +446,10 @@ export default function MyBookingsPage() {
               returnPendingBookings.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white p-4"
+                  className="flex flex-col gap-3 rounded-2xl border border-amber-100 bg-white p-4 md:flex-row md:items-center md:justify-between"
                 >
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-black text-slate-800">
                         {getRequestTitle(item)}
                       </p>
@@ -418,7 +473,7 @@ export default function MyBookingsPage() {
                     </p>
                   </div>
 
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black text-amber-700">
+                  <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black text-amber-700">
                     รอรับคืน
                   </span>
                 </div>
@@ -447,10 +502,10 @@ export default function MyBookingsPage() {
               returnedBookings.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-white p-4"
+                  className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-white p-4 md:flex-row md:items-center md:justify-between"
                 >
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-black text-slate-800">
                         {getRequestTitle(item)}
                       </p>
@@ -474,7 +529,7 @@ export default function MyBookingsPage() {
                     </p>
                   </div>
 
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
+                  <span className="w-fit rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
                     คืนแล้ว
                   </span>
                 </div>
