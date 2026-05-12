@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Trash2,
+  Package,
+  Pencil,
 } from 'lucide-react';
 
 export default function AdminEquipmentPage() {
@@ -117,7 +119,11 @@ export default function AdminEquipmentPage() {
       return false;
     }
 
-    if (formData.total_stock < 0 || formData.available_stock < 0 || formData.broken_stock < 0) {
+    if (
+      formData.total_stock < 0 ||
+      formData.available_stock < 0 ||
+      formData.broken_stock < 0
+    ) {
       openWarning('จำนวนอุปกรณ์ต้องไม่ติดลบ');
       return false;
     }
@@ -193,6 +199,24 @@ export default function AdminEquipmentPage() {
     }
   };
 
+  const openEditModal = (item: any) => {
+    setFormData({
+      id: item.id || '',
+      name: item.name || '',
+      code: item.code || '',
+      category: item.category || '',
+      total_stock: item.total_stock || 0,
+      available_stock: item.available_stock || 0,
+      broken_stock: item.broken_stock || 0,
+      status: item.status || 'available',
+      image_url: item.image_url || '',
+    });
+    setImagePreview(item.image_url || null);
+    setImageFile(null);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
   const openDeleteConfirm = (id: string) => {
     setDeleteTargetId(id);
     setShowDeleteConfirm(true);
@@ -228,30 +252,23 @@ export default function AdminEquipmentPage() {
             setIsModalOpen(true);
           }}
           variant="success"
-          className="font-black"
+          className="w-full rounded-2xl px-5 py-3 text-sm font-black shadow-lg sm:w-auto"
         >
           + เพิ่มอุปกรณ์ใหม่
         </Button>
       }
     >
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white text-black shadow-xl">
-        <table className="w-full border-collapse">
-          <thead className="bg-slate-800 text-white">
-            <tr className="text-left text-[11px] font-black uppercase tracking-widest">
-              <th className="px-6 py-5">รูป</th>
-              <th className="px-6 py-5">ชื่ออุปกรณ์ / รหัส</th>
-              <th className="px-6 py-5 text-center">ทั้งหมด</th>
-              <th className="px-6 py-5 text-center text-emerald-400">ว่าง</th>
-              <th className="px-6 py-5 text-center text-red-400">พัง</th>
-              <th className="px-6 py-5 text-center">จัดการ</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-gray-50">
-            {equipmentList.map((item) => (
-              <tr key={item.id} className="transition-colors hover:bg-slate-50/50">
-                <td className="px-6 py-4">
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+      <div className="pb-28 md:pb-16">
+        {/* Mobile Card View */}
+        <div className="space-y-4 md:hidden">
+          {equipmentList.length > 0 ? (
+            equipmentList.map((item) => (
+              <div
+                key={item.id}
+                className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-xl shadow-slate-200/50"
+              >
+                <div className="flex gap-4 p-5">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-100 bg-slate-50">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -259,78 +276,173 @@ export default function AdminEquipmentPage() {
                         alt={item.name || 'equipment'}
                       />
                     ) : (
-                      <ImageIcon className="text-gray-300" size={20} />
+                      <ImageIcon className="text-slate-300" size={28} />
                     )}
                   </div>
-                </td>
 
-                <td className="px-6 py-4">
-                  <p className="font-black text-slate-800">{item.name}</p>
-                  <p className="text-[10px] font-bold uppercase text-gray-400">
-                    {item.code} | {item.category}
-                  </p>
-                </td>
-
-                <td className="px-6 py-4 text-center font-black">
-                  {item.total_stock || 0}
-                </td>
-
-                <td className="bg-emerald-50/50 px-6 py-4 text-center font-black text-emerald-600">
-                  {item.available_stock || 0}
-                </td>
-
-                <td className="bg-red-50/50 px-6 py-4 text-center font-black text-red-600">
-                  {item.broken_stock || 0}
-                </td>
-
-                <td className="px-6 py-4">
-                  <div className="flex justify-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="!font-black !text-black"
-                      onClick={() => {
-                        setFormData({
-                          id: item.id || '',
-                          name: item.name || '',
-                          code: item.code || '',
-                          category: item.category || '',
-                          total_stock: item.total_stock || 0,
-                          available_stock: item.available_stock || 0,
-                          broken_stock: item.broken_stock || 0,
-                          status: item.status || 'available',
-                          image_url: item.image_url || '',
-                        });
-                        setImagePreview(item.image_url || null);
-                        setImageFile(null);
-                        setModalMode('edit');
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      แก้ไข
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      className="bg-red-500 font-black text-white hover:bg-red-600"
-                      onClick={() => openDeleteConfirm(item.id)}
-                    >
-                      ลบ
-                    </Button>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-3 text-xl font-black leading-snug text-slate-800">
+                      {item.name}
+                    </p>
+                    <p className="mt-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                      {item.code || 'ไม่มีรหัส'}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-blue-500">
+                      {item.category || 'ไม่ระบุหมวดหมู่'}
+                    </p>
                   </div>
-                </td>
-              </tr>
-            ))}
+                </div>
 
-            {equipmentList.length === 0 && (
-              <tr>
-                <td colSpan={6} className="py-16 text-center font-bold text-slate-400">
-                  ยังไม่มีข้อมูลอุปกรณ์
-                </td>
+                <div className="grid grid-cols-3 border-y border-slate-100 bg-slate-50/70">
+                  <div className="p-4 text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-400">
+                      ทั้งหมด
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-slate-800">
+                      {item.total_stock || 0}
+                    </p>
+                  </div>
+
+                  <div className="border-x border-slate-100 bg-emerald-50/70 p-4 text-center">
+                    <p className="text-[10px] font-black uppercase text-emerald-500">
+                      ว่าง
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-emerald-600">
+                      {item.available_stock || 0}
+                    </p>
+                  </div>
+
+                  <div className="bg-red-50/70 p-4 text-center">
+                    <p className="text-[10px] font-black uppercase text-red-500">
+                      พัง
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-red-600">
+                      {item.broken_stock || 0}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 p-4">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-3 !font-black !text-slate-700"
+                    onClick={() => openEditModal(item)}
+                  >
+                    <Pencil size={16} />
+                    แก้ไข
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 font-black text-white hover:bg-red-600"
+                    onClick={() => openDeleteConfirm(item.id)}
+                  >
+                    <Trash2 size={16} />
+                    ลบ
+                  </Button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+              <Package size={40} className="mx-auto mb-3 text-slate-300" />
+              <p className="text-sm font-bold text-slate-400">
+                ยังไม่มีข้อมูลอุปกรณ์
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden overflow-hidden rounded-2xl border border-gray-100 bg-white text-black shadow-xl md:block">
+          <table className="w-full border-collapse">
+            <thead className="bg-slate-800 text-white">
+              <tr className="text-left text-[11px] font-black uppercase tracking-widest">
+                <th className="px-6 py-5">รูป</th>
+                <th className="px-6 py-5">ชื่ออุปกรณ์ / รหัส</th>
+                <th className="px-6 py-5 text-center">ทั้งหมด</th>
+                <th className="px-6 py-5 text-center text-emerald-400">ว่าง</th>
+                <th className="px-6 py-5 text-center text-red-400">พัง</th>
+                <th className="px-6 py-5 text-center">จัดการ</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody className="divide-y divide-gray-50">
+              {equipmentList.map((item) => (
+                <tr
+                  key={item.id}
+                  className="transition-colors hover:bg-slate-50/50"
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          className="h-full w-full object-cover"
+                          alt={item.name || 'equipment'}
+                        />
+                      ) : (
+                        <ImageIcon className="text-gray-300" size={20} />
+                      )}
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <p className="font-black text-slate-800">{item.name}</p>
+                    <p className="text-[10px] font-bold uppercase text-gray-400">
+                      {item.code} | {item.category}
+                    </p>
+                  </td>
+
+                  <td className="px-6 py-4 text-center font-black">
+                    {item.total_stock || 0}
+                  </td>
+
+                  <td className="bg-emerald-50/50 px-6 py-4 text-center font-black text-emerald-600">
+                    {item.available_stock || 0}
+                  </td>
+
+                  <td className="bg-red-50/50 px-6 py-4 text-center font-black text-red-600">
+                    {item.broken_stock || 0}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="!font-black !text-black"
+                        onClick={() => openEditModal(item)}
+                      >
+                        แก้ไข
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        className="bg-red-500 font-black text-white hover:bg-red-600"
+                        onClick={() => openDeleteConfirm(item.id)}
+                      >
+                        ลบ
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {equipmentList.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-16 text-center font-bold text-slate-400"
+                  >
+                    ยังไม่มีข้อมูลอุปกรณ์
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal
@@ -368,12 +480,12 @@ export default function AdminEquipmentPage() {
               onChange={handleFileChange}
             />
 
-            <p className="text-[10px] uppercase tracking-tighter text-slate-400">
+            <p className="text-center text-[10px] uppercase tracking-tighter text-slate-400">
               คลิกที่รูปเพื่อเปลี่ยนรูปภาพอุปกรณ์
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               label="ชื่ออุปกรณ์"
               value={formData.name}
@@ -399,7 +511,7 @@ export default function AdminEquipmentPage() {
             }
           />
 
-          <div className="grid grid-cols-3 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-5">
+          <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-5 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
                 ทั้งหมด
@@ -408,7 +520,9 @@ export default function AdminEquipmentPage() {
                 type="number"
                 className="w-full rounded-xl border p-2 text-center font-black"
                 value={formData.total_stock}
-                onChange={(e) => handleNumberChange('total_stock', e.target.value)}
+                onChange={(e) =>
+                  handleNumberChange('total_stock', e.target.value)
+                }
               />
             </div>
 
@@ -434,12 +548,14 @@ export default function AdminEquipmentPage() {
                 type="number"
                 className="w-full rounded-xl border-2 border-red-500 p-2 text-center font-black text-red-700"
                 value={formData.broken_stock}
-                onChange={(e) => handleNumberChange('broken_stock', e.target.value)}
+                onChange={(e) =>
+                  handleNumberChange('broken_stock', e.target.value)
+                }
               />
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row">
             <Button
               className="flex-1 rounded-2xl bg-slate-100 !font-black !text-slate-500"
               onClick={() => setIsModalOpen(false)}
