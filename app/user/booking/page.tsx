@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  PackageSearch,
 } from 'lucide-react';
 
 export default function BookingPage() {
@@ -139,7 +140,7 @@ export default function BookingPage() {
 
   const categories = [
     'all',
-    ...Array.from(new Set(equipment.map((item) => item.category))),
+    ...Array.from(new Set(equipment.map((item) => item.category).filter(Boolean))),
   ];
 
   const filteredEquipment = equipment.filter((item) => {
@@ -275,63 +276,71 @@ export default function BookingPage() {
     <DashboardLayout
       title="ขอยืมอุปกรณ์"
       actionButton={
-        <div className="flex flex-row flex-nowrap items-center gap-3">
-          <Link href="/user/my-bookings">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
+          <Link href="/user/my-bookings" className="w-full sm:w-auto">
             <Button
               variant="secondary"
               size="sm"
-              className="flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border-2 border-slate-100 bg-white px-5 text-[14px] font-black uppercase tracking-wider !text-slate-500 transition-all hover:border-blue-500 hover:text-blue-600"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-black text-slate-500 shadow-sm transition hover:border-blue-300 hover:text-blue-600 sm:h-10 sm:px-5 sm:text-[14px]"
             >
-              <Clock size={16} />
+              <Clock size={17} />
               <span>ประวัติการจอง</span>
             </Button>
           </Link>
 
-          <Link href="/user/computer-booking">
+          <Link href="/user/computer-booking" className="w-full sm:w-auto">
             <Button
               variant="secondary"
               size="sm"
-              className="flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border-2 border-transparent px-5 text-[14px] font-black uppercase tracking-wider shadow-sm shadow-blue-100"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-3 text-[13px] font-black text-slate-700 shadow-sm transition hover:bg-blue-50 hover:text-blue-600 sm:h-10 sm:px-5 sm:text-[14px]"
             >
-              <LayoutGrid size={16} />
+              <LayoutGrid size={17} />
               <span>ขอใช้คอมพิวเตอร์</span>
             </Button>
           </Link>
         </div>
       }
     >
-      <div className="space-y-8 pb-20">
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col justify-between gap-2 border-b border-slate-50 pb-4 md:flex-row md:items-end">
-            <div></div>
+      <div className="space-y-6 pb-32 md:space-y-8 md:pb-20">
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/40 md:p-5">
+          <div className="mb-4 flex items-center gap-2 px-1">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+              <PackageSearch size={19} />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-slate-800 md:text-base">
+                ค้นหาอุปกรณ์
+              </h2>
+              <p className="text-[11px] font-bold text-slate-400">
+                เลือกอุปกรณ์ที่ต้องการยืม
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-col items-center gap-2 rounded-[2rem] border border-slate-100 bg-white p-1.5 shadow-xl shadow-slate-200/40 lg:flex-row">
-            <div className="group relative w-full flex-1">
+          <div className="flex flex-col gap-3">
+            <div className="group relative w-full rounded-2xl border border-slate-100 bg-slate-50">
               <Search
-                className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-blue-500"
-                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-blue-500"
+                size={20}
               />
               <input
                 type="text"
                 placeholder="ค้นหาชื่ออุปกรณ์..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-11 w-full border-none bg-transparent pl-12 pr-6 text-sm font-bold text-slate-700 outline-none placeholder:text-slate-300"
+                className="h-13 w-full border-none bg-transparent py-4 pl-12 pr-4 text-base font-bold text-slate-700 outline-none placeholder:text-slate-300"
               />
             </div>
 
-            <div className="mx-1 hidden h-6 w-[1px] bg-slate-100 lg:block" />
-
-            <div className="no-scrollbar flex w-full shrink-0 items-center gap-1.5 overflow-x-auto p-1 lg:w-auto">
+            <div className="no-scrollbar flex w-full items-center gap-2 overflow-x-auto pb-1">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`h-9 rounded-full border-2 px-5 text-[11px] font-black whitespace-nowrap transition-all duration-300 ${
+                  className={`h-11 shrink-0 rounded-2xl border px-5 text-sm font-black whitespace-nowrap transition-all duration-300 ${
                     selectedCategory === cat
-                      ? 'border-slate-900 bg-slate-900 text-white shadow-md'
-                      : 'border-slate-50 bg-white text-slate-400 hover:border-slate-200'
+                      ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-200'
+                      : 'border-slate-100 bg-white text-slate-400 hover:border-blue-200 hover:text-blue-600'
                   }`}
                 >
                   {cat === 'all' ? 'ทั้งหมด' : cat}
@@ -341,101 +350,114 @@ export default function BookingPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {filteredEquipment.map((item, index) => (
-            <div
-              key={index}
-              className="group flex flex-col overflow-hidden rounded-[2.5rem] border border-slate-50 bg-white font-bold shadow-lg transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl"
-            >
-              <div className="relative flex h-56 w-full items-center justify-center overflow-hidden border-b border-slate-50 bg-slate-50">
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-2 text-slate-200">
-                    <ImageIcon size={50} strokeWidth={1} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                      No Image
-                    </span>
-                  </div>
-                )}
-
-                <div className="absolute bottom-5 left-5">
-                  <div
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 shadow-lg backdrop-blur-md ${
-                      item.available_stock > 0
-                        ? 'border-emerald-400 bg-emerald-500/90 text-white'
-                        : 'border-slate-700 bg-slate-800/90 text-white'
-                    }`}
-                  >
-                    <div
-                      className={`h-1.5 w-1.5 animate-pulse rounded-full ${
-                        item.available_stock > 0
-                          ? 'bg-emerald-200'
-                          : 'bg-slate-400'
-                      }`}
+        {filteredEquipment.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+            {filteredEquipment.map((item, index) => (
+              <div
+                key={index}
+                className="group flex flex-col overflow-hidden rounded-[2.2rem] border border-slate-100 bg-white font-bold shadow-xl shadow-slate-200/50 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl md:rounded-[2.5rem]"
+              >
+                <div className="relative flex h-72 w-full items-center justify-center overflow-hidden border-b border-slate-50 bg-slate-50 md:h-56">
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    <span className="text-[9px] font-black uppercase tracking-widest">
-                      {item.available_stock > 0 ? 'Available' : 'Out of Stock'}
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-slate-200">
+                      <ImageIcon size={50} strokeWidth={1} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                        No Image
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-5 left-5">
+                    <div
+                      className={`flex items-center gap-2 rounded-2xl border px-4 py-2 shadow-lg backdrop-blur-md ${
+                        item.available_stock > 0
+                          ? 'border-emerald-400 bg-emerald-500/90 text-white'
+                          : 'border-slate-700 bg-slate-800/90 text-white'
+                      }`}
+                    >
+                      <div
+                        className={`h-2 w-2 animate-pulse rounded-full ${
+                          item.available_stock > 0
+                            ? 'bg-emerald-200'
+                            : 'bg-slate-400'
+                        }`}
+                      />
+                      <span className="text-[11px] font-black uppercase tracking-widest">
+                        {item.available_stock > 0 ? 'Available' : 'Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col justify-between p-6 md:p-8">
+                  <div className="mb-6">
+                    <span className="mb-2 block text-[11px] font-black uppercase tracking-widest text-blue-500">
+                      {item.category}
                     </span>
+                    <h3 className="line-clamp-2 text-2xl font-black leading-tight text-slate-800 transition-colors group-hover:text-blue-600 md:text-xl">
+                      {item.name}
+                    </h3>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-3 rounded-3xl border border-slate-100 bg-slate-50 p-2">
+                      <div className="rounded-2xl bg-white py-3 text-center shadow-sm">
+                        <p className="mb-1 text-[10px] font-black uppercase text-slate-400">
+                          ทั้งหมด
+                        </p>
+                        <p className="text-2xl font-black text-slate-700 md:text-lg">
+                          {item.total_stock || 0}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-white py-3 text-center shadow-sm">
+                        <p className="mb-1 text-[10px] font-black uppercase text-emerald-400">
+                          ว่าง
+                        </p>
+                        <p className="text-2xl font-black text-emerald-600 md:text-lg">
+                          {item.available_stock || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      disabled={item.available_stock <= 0}
+                      className={`w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest transition-all ${
+                        item.available_stock <= 0
+                          ? 'bg-slate-100 text-slate-300'
+                          : 'bg-slate-900 text-white shadow-md hover:bg-blue-600'
+                      }`}
+                      onClick={() => {
+                        setSelected(item);
+                        setOpen(true);
+                      }}
+                    >
+                      {item.available_stock <= 0
+                        ? 'ถูกยืมแล้ว'
+                        : 'ขอยืมอุปกรณ์'}
+                    </Button>
                   </div>
                 </div>
               </div>
-
-              <div className="flex flex-1 flex-col justify-between p-8">
-                <div className="mb-6">
-                  <span className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-blue-500">
-                    {item.category}
-                  </span>
-                  <h3 className="text-xl font-black leading-tight text-slate-800 transition-colors group-hover:text-blue-600">
-                    {item.name}
-                  </h3>
-                </div>
-
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-1.5">
-                    <div className="flex-1 rounded-xl bg-white py-2.5 text-center shadow-sm">
-                      <p className="mb-0.5 text-[8px] font-black uppercase text-slate-400">
-                        ทั้งหมด
-                      </p>
-                      <p className="text-md font-black text-slate-700">
-                        {item.total_stock || 0}
-                      </p>
-                    </div>
-                    <div className="flex-1 rounded-xl bg-white py-2.5 text-center shadow-sm">
-                      <p className="mb-0.5 text-[8px] font-black uppercase text-emerald-400">
-                        ว่าง
-                      </p>
-                      <p className="text-md font-black text-emerald-600">
-                        {item.available_stock || 0}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    disabled={item.available_stock <= 0}
-                    className={`w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest transition-all ${
-                      item.available_stock <= 0
-                        ? 'bg-slate-100 text-slate-300'
-                        : 'bg-slate-900 text-white shadow-md hover:bg-blue-600'
-                    }`}
-                    onClick={() => {
-                      setSelected(item);
-                      setOpen(true);
-                    }}
-                  >
-                    {item.available_stock <= 0
-                      ? 'ถูกยืมเเล้ว'
-                      : 'ขอยืมอุปกรณ์'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+            <Search size={36} className="mx-auto mb-3 text-slate-300" />
+            <p className="text-base font-black text-slate-500">
+              ไม่พบอุปกรณ์ที่ค้นหา
+            </p>
+            <p className="mt-1 text-sm font-bold text-slate-300">
+              ลองเปลี่ยนคำค้นหาหรือหมวดหมู่ใหม่
+            </p>
+          </div>
+        )}
       </div>
 
       <Modal
