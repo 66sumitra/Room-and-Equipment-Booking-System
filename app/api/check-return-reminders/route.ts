@@ -42,7 +42,7 @@ function getReminderTime(borrowDate: string, returnDate: string) {
   const durationMs = returnAt.getTime() - borrowAt.getTime();
   const oneDayMs = 24 * 60 * 60 * 1000;
 
-  // ถ้ายืมหลายวัน แจ้งก่อน 1 วัน ตอน 08:00 น.
+  // ถ้ายืมหลายวัน แจ้งก่อนวันคืน 1 วัน ตอน 08:00 น.
   if (durationMs > oneDayMs) {
     const returnText = returnDate.replace(' ', 'T').slice(0, 10);
     const returnDay = new Date(`${returnText}T00:00:00+07:00`);
@@ -56,7 +56,7 @@ function getReminderTime(borrowDate: string, returnDate: string) {
     return new Date(`${year}-${month}-${day}T08:00:00+07:00`);
   }
 
-  // ถ้ายืมวันเดียว / ระยะสั้น แจ้งก่อน 15 นาที
+  // ถ้ายืมวันเดียว / ระยะสั้น แจ้งก่อนคืน 15 นาที
   return new Date(returnAt.getTime() - 15 * 60 * 1000);
 }
 
@@ -151,11 +151,25 @@ export async function GET(request: Request) {
       const userName = item.user_name || userEmail || 'ผู้ใช้งาน';
 
       // 1) แจ้งเตือนก่อนถึงเวลาคืน
+      // ล็อกก่อนส่ง เพื่อกันเด้งซ้ำหลายรอบ
       if (
         !item.return_reminder_sent &&
         now.getTime() >= reminderAt.getTime() &&
         now.getTime() < returnAt.getTime()
       ) {
+        const { data: lockedReminder, error: lockReminderError } =
+          await supabaseAdmin
+            .from('borrow_requests')
+            .update({ return_reminder_sent: true })
+            .eq('id', item.id)
+            .eq('return_reminder_sent', false)
+            .select('id')
+            .maybeSingle();
+
+        if (lockReminderError || !lockedReminder) {
+          continue;
+        }
+
         const title = 'ใกล้ถึงเวลาคืนอุปกรณ์';
         const message = `ใกล้ถึงเวลาคืน ${itemName} แล้ว กรุณาคืนภายใน ${formatThaiDateTime(
           item.return_date
@@ -188,16 +202,25 @@ export async function GET(request: Request) {
 ขอบคุณค่ะ`
         );
 
-        await supabaseAdmin
-          .from('borrow_requests')
-          .update({ return_reminder_sent: true })
-          .eq('id', item.id);
-
         returnReminderCount++;
       }
 
       // 2) แจ้งเตือนเกินกำหนดคืน
+      // ล็อกก่อนส่ง เพื่อกันเด้งซ้ำหลายรอบ
       if (!item.overdue_reminder_sent && now.getTime() >= returnAt.getTime()) {
+        const { data: lockedOverdue, error: lockOverdueError } =
+          await supabaseAdmin
+            .from('borrow_requests')
+            .update({ overdue_reminder_sent: true })
+            .eq('id', item.id)
+            .eq('overdue_reminder_sent', false)
+            .select('id')
+            .maybeSingle();
+
+        if (lockOverdueError || !lockedOverdue) {
+          continue;
+        }
+
         const title = 'เกินกำหนดคืนอุปกรณ์';
         const message = `${itemName} เกินกำหนดคืนแล้ว กรุณารีบดำเนินการคืนอุปกรณ์`;
 
@@ -254,11 +277,6 @@ export async function GET(request: Request) {
               )
           );
         }
-
-        await supabaseAdmin
-          .from('borrow_requests')
-          .update({ overdue_reminder_sent: true })
-          .eq('id', item.id);
 
         overdueCount++;
       }
