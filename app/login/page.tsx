@@ -47,7 +47,7 @@ export default function LoginPage() {
 
     if (profileError) {
       console.error("Find profile by id error:", profileError);
-      setError("ไม่สามารถตรวจสอบข้อมูลผู้ใช้ได้");
+      setError("ไม่สามารถตรวจสอบข้อมูลผู้ใช้ได้: " + profileError.message);
       return;
     }
 
@@ -61,7 +61,10 @@ export default function LoginPage() {
 
       if (emailProfileError) {
         console.error("Find profile by email error:", emailProfileError);
-        setError("ไม่สามารถตรวจสอบข้อมูลผู้ใช้จากอีเมลได้");
+        setError(
+          "ไม่สามารถตรวจสอบข้อมูลผู้ใช้จากอีเมลได้: " +
+            emailProfileError.message
+        );
         return;
       }
 
@@ -79,8 +82,6 @@ export default function LoginPage() {
             name: userName,
             role: "user",
             email_verified: true,
-            password: null,
-            password_hash: null,
           },
         ])
         .select("id, role, email_verified")
@@ -115,45 +116,82 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const handleGoogleCallback = async () => {
       if (typeof window === "undefined") return;
 
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
 
-      if (!code) return;
-
-      setGoogleLoading(true);
+      // ถ้าไม่ได้กลับมาจาก Google และไม่มี session ก็ไม่ต้องทำอะไร
       setError("");
 
       try {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (code) {
+          setGoogleLoading(true);
 
-        window.history.replaceState({}, document.title, "/login");
+          const { data, error } = await supabase.auth.exchangeCodeForSession(
+            code
+          );
 
-        if (error) {
-          setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ: " + error.message);
+          window.history.replaceState({}, document.title, "/login");
+
+          if (error) {
+            console.error("Google exchange error:", error);
+            if (isMounted) {
+              setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ: " + error.message);
+            }
+            return;
+          }
+
+          if (data.session?.user) {
+            await redirectByRole(data.session.user);
+            return;
+          }
+        }
+
+        // กรณี Supabase มี session แล้ว แต่ URL ไม่มี code ให้จับ
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Get session error:", sessionError);
           return;
         }
 
-        const session =
-          data.session || (await supabase.auth.getSession()).data.session;
-
-        if (!session?.user) {
-          setError("เข้าสู่ระบบด้วย Google สำเร็จ แต่ไม่พบ session");
+        if (session?.user) {
+          await redirectByRole(session.user);
           return;
         }
-
-        await redirectByRole(session.user);
       } catch (err: any) {
         console.error("Google callback error:", err);
-        setError(err?.message || "เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+        if (isMounted) {
+          setError(err?.message || "เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+        }
       } finally {
-        setGoogleLoading(false);
+        if (isMounted) {
+          setGoogleLoading(false);
+        }
       }
     };
 
     handleGoogleCallback();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        await redirectByRole(session.user);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const openForgotPassword = () => {
@@ -271,7 +309,6 @@ export default function LoginPage() {
       }
 
       const target = profile.role === "admin" ? "/dashboard" : "/user/booking";
-
       window.location.href = target;
     } catch (err: any) {
       console.error("Login error:", err);
