@@ -1049,7 +1049,7 @@ ${itemCodeLabel}: ${itemCode}
                 กำลังโหลดข้อมูล...
               </div>
             ) : filteredRequests.length > 0 ? (
-              <div className="space-y-4">
+              <div className="custom-scrollbar max-h-[420px] space-y-4 overflow-y-auto rounded-[2rem] pr-2">
                 {filteredRequests.map((req) => (
                   <PendingRequestCard key={req.id} req={req} />
                 ))}
@@ -1078,7 +1078,7 @@ ${itemCodeLabel}: ${itemCode}
                 กำลังโหลดข้อมูล...
               </div>
             ) : filteredReturnRequests.length > 0 ? (
-              <div className="space-y-4">
+              <div className="custom-scrollbar max-h-[420px] space-y-4 overflow-y-auto rounded-[2rem] pr-2">
                 {filteredReturnRequests.map((req) => (
                   <ReturnRequestCard key={req.id} req={req} />
                 ))}
@@ -1396,6 +1396,26 @@ ${itemCodeLabel}: ${itemCode}
           </Button>
         </div>
       </Modal>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 999px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 999px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </DashboardLayout>
   );
 }
