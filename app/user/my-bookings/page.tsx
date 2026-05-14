@@ -550,7 +550,7 @@ export default function MyBookingsPage() {
     <button
       type="button"
       onClick={onClick}
-      className={`h-11 shrink-0 rounded-2xl border px-4 text-[12px] font-black transition-all ${
+      className={`h-9 shrink-0 rounded-xl border px-3 text-[11px] font-bold transition-all ${
         active
           ? 'border-blue-100 bg-blue-50 text-blue-600 shadow-sm'
           : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-600'
@@ -666,15 +666,15 @@ export default function MyBookingsPage() {
 
           <div className="grid w-full grid-cols-1 gap-2 lg:max-w-[220px]">
             <Button
-              className="h-12 rounded-2xl bg-white px-4 text-xs font-black !text-blue-600 ring-1 ring-blue-100 hover:bg-blue-50"
-              onClick={() => {
-                setSelected(item);
-                setDetailOpen(true);
-              }}
-            >
-              <Eye size={16} className="mr-2" />
-              ดูรายละเอียด
-            </Button>
+  className="h-9 rounded-xl bg-white px-3 text-[11px] font-bold !text-blue-600 ring-1 ring-blue-100 hover:bg-blue-50"
+  onClick={() => {
+    setSelected(item);
+    setDetailOpen(true);
+  }}
+>
+  <Eye size={13} className="mr-1.5" />
+  ดูรายละเอียด
+                </Button>
 
             {item.status === 'approved' && (
               <Button
