@@ -141,7 +141,6 @@ export default function ApprovalsPage() {
             category,
             code,
             equipment_code,
-            item_code,
             available_stock,
             status
           `
@@ -257,7 +256,7 @@ export default function ApprovalsPage() {
       return req.computers?.pc_name || 'ไม่ระบุคอมพิวเตอร์';
     }
 
-    return req.equipment?.name || 'ไม่ระบุอุปกรณ์';
+    return req.equipment?.name || 'ไม่พบข้อมูลอุปกรณ์ในคลัง';
   };
 
   const getRequestSubtitle = (req: any) => {
@@ -284,7 +283,6 @@ export default function ApprovalsPage() {
     return (
       req?.equipment?.code ||
       req?.equipment?.equipment_code ||
-      req?.equipment?.item_code ||
       'ไม่มีรหัสอุปกรณ์'
     );
   };
