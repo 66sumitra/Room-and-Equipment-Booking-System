@@ -20,15 +20,15 @@ export default function Home() {
           </div>
 
           <div className="mb-4 inline-flex rounded-full border border-blue-100 bg-white/80 px-4 py-2 text-xs font-black text-blue-600 shadow-sm backdrop-blur">
-            ระบบจัดการการยืมห้องคอมพิวเตอร์และอุปกรณ์
+            ระบบจัดการการยืมอุปกรณ์และขอใช้งานคอมพิวเตอร์
           </div>
 
           <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl">
-            ระบบยืมห้องคอมและอุปกรณ์
+            ระบบยืมหอุปกรณ์และขอใช้คอมพิวเตอร์สำหรับนักศึกษาและบุคลากร
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-base font-medium leading-relaxed text-slate-500 md:text-lg">
-            ยืมห้องคอมพิวเตอร์และอุปกรณ์ได้อย่างสะดวก รวดเร็ว พร้อมติดตามสถานะคำขอได้แบบเรียลไทม์
+            ยืมอุปกรณ์และขอใช้คอมพิวเตอร์ได้อย่างสะดวก รวดเร็ว พร้อมติดตามสถานะคำขอได้แบบเรียลไทม์
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
