@@ -1,56 +1,116 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const RETURN_REMINDER_MINUTES = 15;
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-const formatThaiDateTime = (dateTime: string | null | undefined) => {
-  if (!dateTime) return 'ไม่ระบุ';
+function parseDateTime(value: string | null | undefined) {
+  if (!value) return null;
 
-  return new Date(dateTime).toLocaleString('th-TH', {
+  const text = value.replace(' ', 'T');
+
+  if (text.endsWith('Z') || text.includes('+')) {
+    return new Date(text);
+  }
+
+  return new Date(`${text}+07:00`);
+}
+
+function formatThaiDateTime(dateTime: string | null | undefined) {
+  const date = parseDateTime(dateTime);
+
+  if (!date) return 'ไม่ระบุ';
+
+  return date.toLocaleString('th-TH', {
+    timeZone: 'Asia/Bangkok',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
-};
+}
 
-const getItemName = (item: any) => {
-  if (item.request_type === 'computer') {
-    return item.computers?.pc_name || 'คอมพิวเตอร์';
+function getReminderTime(borrowDate: string, returnDate: string) {
+  const borrowAt = parseDateTime(borrowDate);
+  const returnAt = parseDateTime(returnDate);
+
+  if (!borrowAt || !returnAt) return null;
+
+  const durationMs = returnAt.getTime() - borrowAt.getTime();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  // ถ้ายืมหลายวัน แจ้งก่อน 1 วัน เวลา 08:00 น.
+  if (durationMs > oneDayMs) {
+    const returnText = returnDate.replace(' ', 'T').slice(0, 10);
+    const returnDay = new Date(`${returnText}T00:00:00+07:00`);
+
+    returnDay.setDate(returnDay.getDate() - 1);
+
+    const year = returnDay.getFullYear();
+    const month = String(returnDay.getMonth() + 1).padStart(2, '0');
+    const day = String(returnDay.getDate()).padStart(2, '0');
+
+    return new Date(`${year}-${month}-${day}T08:00:00+07:00`);
   }
 
-  return item.equipment?.name || 'อุปกรณ์';
-};
+  // ถ้ายืมวันเดียว / ระยะสั้น แจ้งก่อนคืน 15 นาที
+  return new Date(returnAt.getTime() - 15 * 60 * 1000);
+}
 
-const getItemCode = (item: any) => {
+function getComputerData(item: any) {
+  return Array.isArray(item.computers) ? item.computers[0] : item.computers;
+}
+
+function getEquipmentData(item: any) {
+  return Array.isArray(item.equipment) ? item.equipment[0] : item.equipment;
+}
+
+function getItemName(item: any) {
+  const computerData = getComputerData(item);
+  const equipmentData = getEquipmentData(item);
+
   if (item.request_type === 'computer') {
-    return item.computers?.pc_name || 'ไม่ระบุ';
+    return computerData?.pc_name || 'คอมพิวเตอร์';
   }
 
-  return item.equipment?.code || item.equipment?.equipment_code || 'ไม่ระบุ';
-};
+  return equipmentData?.name || 'อุปกรณ์';
+}
 
-const getItemType = (item: any) => {
+function getItemCode(item: any) {
+  const computerData = getComputerData(item);
+  const equipmentData = getEquipmentData(item);
+
+  if (item.request_type === 'computer') {
+    return computerData?.pc_name || 'ไม่ระบุรหัสคอมพิวเตอร์';
+  }
+
+  return (
+    equipmentData?.code ||
+    equipmentData?.equipment_code ||
+    'ไม่ระบุรหัสอุปกรณ์'
+  );
+}
+
+function getItemDetail(item: any) {
+  const computerData = getComputerData(item);
+  const equipmentData = getEquipmentData(item);
+
+  if (item.request_type === 'computer') {
+    return computerData?.room_name || 'ไม่ระบุห้อง';
+  }
+
+  return equipmentData?.category || 'ไม่ระบุหมวดหมู่';
+}
+
+function getItemTypeText(item: any) {
   return item.request_type === 'computer' ? 'คอมพิวเตอร์' : 'อุปกรณ์';
-};
+}
 
-const getItemDetail = (item: any) => {
-  if (item.request_type === 'computer') {
-    return item.computers?.room_name || 'ไม่ระบุห้อง';
-  }
-
-  return item.equipment?.category || 'ไม่ระบุหมวดหมู่';
-};
-
-const getDisplayName = async (item: any) => {
-  const rawName =
-    typeof item.user_name === 'string' ? item.user_name.trim() : '';
+async function getUserDisplayName(item: any) {
+  const rawName = typeof item.user_name === 'string' ? item.user_name.trim() : '';
 
   if (rawName && !rawName.includes('@')) {
     return rawName;
@@ -69,15 +129,20 @@ const getDisplayName = async (item: any) => {
   }
 
   return 'ผู้ใช้งาน';
-};
+}
 
-const sendEmail = async (
+async function sendEmail(
   origin: string,
-  to: string | null,
+  to: string | null | undefined,
   subject: string,
   message: string
-) => {
-  if (!to) return false;
+) {
+  if (!to) {
+    return {
+      ok: false,
+      error: 'ไม่มีอีเมลผู้รับ',
+    };
+  }
 
   try {
     const response = await fetch(`${origin}/api/send-email`, {
@@ -92,90 +157,108 @@ const sendEmail = async (
       }),
     });
 
+    const result = await response.json().catch(() => null);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error('send reminder email error:', errorData);
-      return false;
+      return {
+        ok: false,
+        error: result || `HTTP ${response.status}`,
+      };
     }
 
-    return true;
-  } catch (error) {
-    console.error('send reminder email failed:', error);
-    return false;
+    return {
+      ok: true,
+      result,
+    };
+  } catch (error: any) {
+    return {
+      ok: false,
+      error: error?.message || error,
+    };
   }
-};
+}
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const origin = request.nextUrl.origin;
-
+    const origin = new URL(request.url).origin;
     const now = new Date();
-    const next15Minutes = new Date(
-      now.getTime() + RETURN_REMINDER_MINUTES * 60 * 1000
-    );
 
-    const { data: reminderRows, error: reminderError } = await supabaseAdmin
+    const { data: requests, error } = await supabaseAdmin
       .from('borrow_requests')
       .select(
         `
         id,
         request_no,
+        request_type,
         user_name,
         user_email,
-        request_type,
-        equipment_id,
-        computer_id,
         borrow_date,
         return_date,
         status,
         return_reminder_sent,
-        equipment (
-          id,
+        overdue_reminder_sent,
+        equipment:equipment_id (
           name,
           category,
           code,
           equipment_code
         ),
-        computers (
-          id,
+        computers:computer_id (
           pc_name,
           room_name
         )
       `
       )
-      .eq('status', 'approved')
-      .eq('return_reminder_sent', false)
-      .gte('return_date', now.toISOString())
-      .lte('return_date', next15Minutes.toISOString());
+      .eq('status', 'approved');
 
-    if (reminderError) {
-      throw reminderError;
+    if (error) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 500 }
+      );
     }
 
     let returnReminderCount = 0;
+    let overdueCount = 0;
+    let emailSentCount = 0;
+    let emailFailedCount = 0;
+    const emailErrors: any[] = [];
 
-    for (const item of reminderRows || []) {
-      const userEmail = item.user_email;
-      const userDisplayName = await getDisplayName(item);
+    for (const item of (requests || []) as any[]) {
+      const returnAt = parseDateTime(item.return_date);
+      const reminderAt = getReminderTime(item.borrow_date, item.return_date);
 
-      const requestNo = item.request_no || 'ไม่ระบุเลขคำขอ';
+      if (!returnAt || !reminderAt) continue;
+
       const itemName = getItemName(item);
       const itemCode = getItemCode(item);
-      const itemType = getItemType(item);
       const itemDetail = getItemDetail(item);
+      const itemTypeText = getItemTypeText(item);
+      const userEmail = item.user_email;
+      const userName = await getUserDisplayName(item);
+      const requestNo = item.request_no || 'ไม่ระบุเลขคำขอ';
       const returnDateText = formatThaiDateTime(item.return_date);
 
-      const title = 'แจ้งเตือนใกล้ถึงกำหนดคืนรายการ';
+      // 1) แจ้งเตือนก่อนถึงเวลาคืน 15 นาที
+      if (
+        !item.return_reminder_sent &&
+        now.getTime() >= reminderAt.getTime() &&
+        now.getTime() < returnAt.getTime()
+      ) {
+        const title = 'แจ้งเตือนใกล้ถึงกำหนดคืนรายการ';
 
-      const message = `ระบบขอแจ้งเตือนว่า รายการยืมของท่านใกล้ถึงกำหนดคืนภายใน ${RETURN_REMINDER_MINUTES} นาที กรุณาดำเนินการคืนรายการภายในเวลาที่กำหนด`;
+        const notificationMessage = `รายการ ${itemName} ใกล้ถึงกำหนดคืนแล้ว กรุณาคืนภายใน ${returnDateText}`;
 
-      const emailMessage = `เรียน คุณ${userDisplayName}
+        const emailMessage = `เรียน คุณ${userName}
 
-ระบบขอแจ้งเตือนว่า รายการยืมของท่านใกล้ถึงกำหนดคืนภายใน ${RETURN_REMINDER_MINUTES} นาที
+ระบบขอแจ้งเตือนว่า รายการยืมของท่านใกล้ถึงกำหนดคืนภายใน 15 นาที
 
 รายละเอียดรายการ
 เลขคำขอยืม: ${requestNo}
-ประเภท: ${itemType}
+ประเภท: ${itemTypeText}
 รายการ: ${itemName}
 รหัสรายการ: ${itemCode}
 รายละเอียด: ${itemDetail}
@@ -188,56 +271,158 @@ export async function GET(request: NextRequest) {
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
 
-      const emailSent = await sendEmail(
-        origin,
-        userEmail,
-        title,
-        emailMessage
-      );
-
-      if (!emailSent) {
-        console.error('email not sent for request:', requestNo);
-        continue;
-      }
-
-      await supabaseAdmin.from('notifications').insert([
-        {
-          user_email: userEmail,
+        const emailResult = await sendEmail(
+          origin,
+          userEmail,
           title,
-          message: `${message} รายการ: ${itemName} เลขคำขอ: ${requestNo} กำหนดคืน: ${returnDateText}`,
-          type: 'return_reminder',
-          related_request_id: item.id,
-        },
-      ]);
+          emailMessage
+        );
 
-      const { error: updateError } = await supabaseAdmin
-        .from('borrow_requests')
-        .update({
-          return_reminder_sent: true,
-        })
-        .eq('id', item.id);
+        if (!emailResult.ok) {
+          emailFailedCount++;
+          emailErrors.push({
+            requestId: item.id,
+            requestNo,
+            to: userEmail,
+            type: 'return_reminder',
+            error: emailResult.error,
+          });
 
-      if (updateError) {
-        console.error('update return_reminder_sent error:', updateError);
-        continue;
+          continue;
+        }
+
+        await supabaseAdmin.from('notifications').insert([
+          {
+            user_email: userEmail,
+            title,
+            message: notificationMessage,
+            type: 'return_reminder',
+            related_request_id: item.id,
+          },
+        ]);
+
+        await supabaseAdmin
+          .from('borrow_requests')
+          .update({ return_reminder_sent: true })
+          .eq('id', item.id);
+
+        returnReminderCount++;
+        emailSentCount++;
       }
 
-      returnReminderCount += 1;
+      // 2) แจ้งเตือนเกินกำหนดคืน
+      if (!item.overdue_reminder_sent && now.getTime() >= returnAt.getTime()) {
+        const title = 'แจ้งเตือนรายการเกินกำหนดคืน';
+
+        const notificationMessage = `รายการ ${itemName} เกินกำหนดคืนแล้ว กรุณารีบดำเนินการคืนรายการ`;
+
+        const emailMessage = `เรียน คุณ${userName}
+
+ระบบตรวจพบว่ารายการยืมของท่านเกินกำหนดคืนแล้ว
+
+รายละเอียดรายการ
+เลขคำขอยืม: ${requestNo}
+ประเภท: ${itemTypeText}
+รายการ: ${itemName}
+รหัสรายการ: ${itemCode}
+รายละเอียด: ${itemDetail}
+กำหนดคืน: ${returnDateText}
+
+กรุณารีบคืนรายการ หรือแจ้งคืนผ่านระบบโดยเร็วที่สุด
+
+ขอแสดงความนับถือ
+ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
+
+        const emailResult = await sendEmail(
+          origin,
+          userEmail,
+          title,
+          emailMessage
+        );
+
+        if (!emailResult.ok) {
+          emailFailedCount++;
+          emailErrors.push({
+            requestId: item.id,
+            requestNo,
+            to: userEmail,
+            type: 'overdue',
+            error: emailResult.error,
+          });
+
+          continue;
+        }
+
+        await supabaseAdmin.from('notifications').insert([
+          {
+            user_email: userEmail,
+            title,
+            message: notificationMessage,
+            type: 'overdue',
+            related_request_id: item.id,
+          },
+        ]);
+
+        const { data: admins } = await supabaseAdmin
+          .from('users')
+          .select('email')
+          .eq('role', 'admin');
+
+        if (admins && admins.length > 0) {
+          await Promise.all(
+            (admins as any[])
+              .filter((admin) => admin.email)
+              .map((admin) =>
+                sendEmail(
+                  origin,
+                  admin.email,
+                  'มีรายการเกินกำหนดคืนในระบบ',
+                  `เรียน ผู้ดูแลระบบ
+
+ระบบตรวจพบรายการเกินกำหนดคืน
+
+รายละเอียดรายการ
+เลขคำขอยืม: ${requestNo}
+ผู้ยืม: ${userName}
+อีเมล: ${userEmail}
+ประเภท: ${itemTypeText}
+รายการ: ${itemName}
+รหัสรายการ: ${itemCode}
+กำหนดคืน: ${returnDateText}
+
+กรุณาเข้าสู่ระบบเพื่อตรวจสอบและดำเนินการต่อ`
+                )
+              )
+          );
+        }
+
+        await supabaseAdmin
+          .from('borrow_requests')
+          .update({ overdue_reminder_sent: true })
+          .eq('id', item.id);
+
+        overdueCount++;
+        emailSentCount++;
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: 'check return reminders success',
+      totalApprovedRequests: requests?.length || 0,
       returnReminderCount,
-      overdueCount: 0,
+      overdueCount,
+      emailSentCount,
+      emailFailedCount,
+      emailErrors,
     });
-  } catch (error: any) {
-    console.error('check-return-reminders error:', error);
+  } catch (error) {
+    const err = error as Error;
 
     return NextResponse.json(
       {
         success: false,
-        message: error.message || 'check return reminders failed',
+        message: err.message || 'server error',
       },
       { status: 500 }
     );
