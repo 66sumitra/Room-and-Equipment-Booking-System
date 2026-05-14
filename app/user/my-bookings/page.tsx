@@ -666,7 +666,7 @@ export default function MyBookingsPage() {
 
           <div className="grid w-full grid-cols-1 gap-2 lg:max-w-[220px]">
             <Button
-  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-[12px] font-black !text-blue-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-100"
+  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-[12px] font-black !text-white shadow-sm transition-all hover:border-blue-200 hover:bg-blue-100"
   onClick={() => {
     setSelected(item);
     setDetailOpen(true);
