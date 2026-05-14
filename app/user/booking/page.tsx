@@ -85,7 +85,12 @@ function generateRequestNo() {
 }
 
 function getEquipmentCode(item: any) {
-  return item?.code || item?.equipment_code || item?.item_code || 'ไม่มีรหัสอุปกรณ์';
+  return (
+    item?.code ||
+    item?.equipment_code ||
+    item?.item_code ||
+    'ไม่มีรหัสอุปกรณ์'
+  );
 }
 
 function DateTimeField({
@@ -166,9 +171,7 @@ function DateTimePickerPopup({
   const [selectedHour, setSelectedHour] = useState(initialHour);
   const [selectedMinute, setSelectedMinute] = useState(initialMinute);
 
-  const [selectedDay, setSelectedDay] = useState(
-    String(initialDate.getDate())
-  );
+  const [selectedDay, setSelectedDay] = useState(String(initialDate.getDate()));
   const [selectedMonth, setSelectedMonth] = useState(
     String(initialDate.getMonth() + 1)
   );
@@ -201,8 +204,8 @@ function DateTimePickerPopup({
     String(index).padStart(2, '0')
   );
 
-  const minuteOptions = Array.from({ length: 12 }, (_, index) =>
-    String(index * 5).padStart(2, '0')
+  const minuteOptions = Array.from({ length: 60 }, (_, index) =>
+    String(index).padStart(2, '0')
   );
 
   const daysInSelectedMonth = new Date(
@@ -873,7 +876,9 @@ export default function BookingPage() {
                         }`}
                       />
                       <span className="text-[11px] font-black uppercase tracking-widest">
-                        {item.available_stock > 0 ? 'Available' : 'Out of Stock'}
+                        {item.available_stock > 0
+                          ? 'Available'
+                          : 'Out of Stock'}
                       </span>
                     </div>
                   </div>
