@@ -1,7 +1,17 @@
 'use client';
 
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Bell, UserCircle, X, Trash2 } from 'lucide-react';
+import {
+  Bell,
+  UserCircle,
+  X,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  RotateCcw,
+  Clock,
+  FileText,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
@@ -163,6 +173,116 @@ export function Header({ title, actionButton }: HeaderProps) {
     return userRole === 'admin' ? 'text-blue-600' : 'text-emerald-600';
   };
 
+  const formatNotificationTime = (dateTime?: string | null) => {
+    if (!dateTime) return '';
+
+    return new Date(dateTime).toLocaleString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getNotificationStyle = (type?: string | null, title?: string | null) => {
+    const text = `${type || ''} ${title || ''}`.toLowerCase();
+
+    if (
+      text.includes('approved') ||
+      text.includes('อนุมัติ') ||
+      text.includes('approval')
+    ) {
+      return {
+        icon: <CheckCircle2 size={20} />,
+        iconBox: 'bg-emerald-50 text-emerald-600',
+        badge: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        border: 'hover:border-emerald-100 hover:bg-emerald-50/30',
+        label: 'อนุมัติแล้ว',
+      };
+    }
+
+    if (
+      text.includes('rejected') ||
+      text.includes('ปฏิเสธ') ||
+      text.includes('ไม่ได้รับ')
+    ) {
+      return {
+        icon: <AlertCircle size={20} />,
+        iconBox: 'bg-red-50 text-red-600',
+        badge: 'bg-red-50 text-red-700 border-red-100',
+        border: 'hover:border-red-100 hover:bg-red-50/30',
+        label: 'ไม่อนุมัติ',
+      };
+    }
+
+    if (
+      text.includes('return') ||
+      text.includes('คืน') ||
+      text.includes('returned')
+    ) {
+      return {
+        icon: <RotateCcw size={20} />,
+        iconBox: 'bg-amber-50 text-amber-600',
+        badge: 'bg-amber-50 text-amber-700 border-amber-100',
+        border: 'hover:border-amber-100 hover:bg-amber-50/30',
+        label: 'การคืนรายการ',
+      };
+    }
+
+    if (
+      text.includes('overdue') ||
+      text.includes('เกินกำหนด') ||
+      text.includes('ครบกำหนด')
+    ) {
+      return {
+        icon: <Clock size={20} />,
+        iconBox: 'bg-orange-50 text-orange-600',
+        badge: 'bg-orange-50 text-orange-700 border-orange-100',
+        border: 'hover:border-orange-100 hover:bg-orange-50/30',
+        label: 'แจ้งเตือนกำหนดคืน',
+      };
+    }
+
+    if (
+      text.includes('urgent') ||
+      text.includes('ด่วน') ||
+      text.includes('new_request')
+    ) {
+      return {
+        icon: <FileText size={20} />,
+        iconBox: 'bg-blue-50 text-blue-600',
+        badge: 'bg-blue-50 text-blue-700 border-blue-100',
+        border: 'hover:border-blue-100 hover:bg-blue-50/30',
+        label: 'คำขอใหม่',
+      };
+    }
+
+    return {
+      icon: <Bell size={20} />,
+      iconBox: 'bg-slate-50 text-slate-500',
+      badge: 'bg-slate-50 text-slate-600 border-slate-100',
+      border: 'hover:border-slate-200 hover:bg-slate-50',
+      label: 'การแจ้งเตือน',
+    };
+  };
+
+  const getFormalTitle = (item: NotificationItem) => {
+    const type = item.type || '';
+    const title = item.title || '';
+
+    if (type === 'approved') return 'แจ้งผลการอนุมัติคำขอใช้งาน';
+    if (type === 'rejected') return 'แจ้งผลการพิจารณาคำขอใช้งาน';
+    if (type === 'returned') return 'แจ้งผลการยืนยันรับคืนรายการ';
+    if (type === 'return_requested') return 'แจ้งคำขอคืนรายการจากผู้ใช้งาน';
+    if (type === 'urgent_request') return 'แจ้งคำขอยืมอุปกรณ์เร่งด่วน';
+    if (type === 'new_request') return 'แจ้งคำขอใช้งานรายการใหม่';
+    if (type === 'overdue') return 'แจ้งเตือนรายการยืมเกินกำหนดคืน';
+    if (type === 'return_reminder') return 'แจ้งเตือนกำหนดคืนรายการ';
+
+    return title || 'การแจ้งเตือนจากระบบ';
+  };
+
   return (
     <header className="relative border-b border-slate-100 bg-white px-4 py-3 md:px-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -179,7 +299,7 @@ export function Header({ title, actionButton }: HeaderProps) {
             <button
               type="button"
               onClick={() => setOpenNotification((prev) => !prev)}
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-600 shadow-sm shadow-slate-200/60 transition hover:text-blue-600 md:h-11 md:w-11"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-600 shadow-sm shadow-slate-200/60 transition hover:border-blue-200 hover:text-blue-600 md:h-11 md:w-11"
               aria-label="เปิดการแจ้งเตือน"
             >
               <Bell size={20} strokeWidth={2.3} />
@@ -195,69 +315,99 @@ export function Header({ title, actionButton }: HeaderProps) {
               <div
                 className="
                   fixed left-3 right-3 top-28 z-[9999]
-                  max-h-[65vh] overflow-hidden rounded-[1.5rem]
+                  max-h-[70vh] overflow-hidden rounded-[1.5rem]
                   border border-slate-100 bg-white shadow-2xl shadow-slate-900/20
                   md:absolute md:left-auto md:right-0 md:top-[calc(100%+12px)]
-                  md:w-[390px] md:max-w-[390px]
+                  md:w-[430px] md:max-w-[430px]
                 "
               >
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-4 py-4">
                   <div>
                     <h2 className="text-base font-black text-slate-800">
-                      การแจ้งเตือน
+                      การแจ้งเตือนจากระบบ
                     </h2>
                     <p className="text-xs font-bold text-slate-400">
-                      ยังไม่ได้อ่าน {notifications.length} รายการ
+                      รายการที่ยังไม่ได้อ่าน {notifications.length} รายการ
                     </p>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setOpenNotification(false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-white hover:text-slate-700"
                     aria-label="ปิดการแจ้งเตือน"
                   >
                     <X size={20} />
                   </button>
                 </div>
 
-                <div className="max-h-[46vh] overflow-y-auto overscroll-contain">
+                <div className="max-h-[50vh] overflow-y-auto overscroll-contain p-3">
                   {notifications.length > 0 ? (
-                    notifications.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleNotificationClick(item)}
-                        className="block w-full border-b border-slate-100 px-4 py-4 text-left transition hover:bg-slate-50"
-                      >
-                        <p className="line-clamp-1 text-sm font-black text-slate-800">
-                          {item.title || 'แจ้งเตือน'}
-                        </p>
+                    <div className="space-y-3">
+                      {notifications.map((item) => {
+                        const style = getNotificationStyle(
+                          item.type,
+                          item.title
+                        );
 
-                        <p className="mt-1 line-clamp-3 text-sm font-semibold leading-relaxed text-slate-500">
-                          {item.message || '-'}
-                        </p>
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleNotificationClick(item)}
+                            className={`block w-full rounded-2xl border border-slate-100 bg-white p-4 text-left shadow-sm transition ${style.border}`}
+                          >
+                            <div className="flex gap-3">
+                              <div
+                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${style.iconBox}`}
+                              >
+                                {style.icon}
+                              </div>
 
-                        {item.created_at && (
-                          <p className="mt-2 text-[11px] font-bold text-slate-300">
-                            {new Date(item.created_at).toLocaleString('th-TH', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </p>
-                        )}
-                      </button>
-                    ))
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${style.badge}`}
+                                  >
+                                    {style.label}
+                                  </span>
+
+                                  {item.created_at && (
+                                    <span className="text-[10px] font-bold text-slate-300">
+                                      {formatNotificationTime(item.created_at)}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="line-clamp-2 text-sm font-black leading-relaxed text-slate-800">
+                                  {getFormalTitle(item)}
+                                </p>
+
+                                <p className="mt-1 line-clamp-4 whitespace-pre-line text-[13px] font-semibold leading-relaxed text-slate-500">
+                                  {item.message || '-'}
+                                </p>
+
+                                {item.related_request_id && (
+                                  <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-blue-500">
+                                    กดเพื่อดูรายละเอียดคำขอ →
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <div className="px-6 py-12 text-center">
                       <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-slate-300">
                         <Bell size={26} />
                       </div>
-                      <p className="text-sm font-bold text-slate-400">
+                      <p className="text-sm font-black text-slate-500">
                         ยังไม่มีการแจ้งเตือน
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-slate-300">
+                        เมื่อมีรายการใหม่ ระบบจะแสดงแจ้งเตือนที่นี่
                       </p>
                     </div>
                   )}
