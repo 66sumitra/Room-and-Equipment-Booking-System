@@ -1,10 +1,23 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import nodemailer from 'nodemailer';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+function escapeHtml(text: string) {
+  return String(text || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
 
 function parseDateTime(value: string | null | undefined) {
   if (!value) return null;
@@ -110,7 +123,8 @@ function getItemTypeText(item: any) {
 }
 
 async function getUserDisplayName(item: any) {
-  const rawName = typeof item.user_name === 'string' ? item.user_name.trim() : '';
+  const rawName =
+    typeof item.user_name === 'string' ? item.user_name.trim() : '';
 
   if (rawName && !rawName.includes('@')) {
     return rawName;
@@ -132,7 +146,6 @@ async function getUserDisplayName(item: any) {
 }
 
 async function sendEmail(
-  origin: string,
   to: string | null | undefined,
   subject: string,
   message: string
@@ -145,42 +158,76 @@ async function sendEmail(
   }
 
   try {
-    const response = await fetch(`${origin}/api/send-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to,
-        subject,
-        message,
-      }),
-    });
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD;
 
-    const result = await response.json().catch(() => null);
-
-    if (!response.ok) {
+    if (!gmailUser || !gmailPassword) {
       return {
         ok: false,
-        error: result || `HTTP ${response.status}`,
+        error:
+          'ยังไม่ได้ตั้งค่า GMAIL_USER หรือ GMAIL_APP_PASSWORD ใน Vercel Environment Variables',
       };
     }
 
+    const safeSubject = escapeHtml(subject);
+    const safeMessage = escapeHtml(message).replace(/\n/g, '<br />');
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailPassword,
+      },
+    });
+
+    await transporter.verify();
+
+    const info = await transporter.sendMail({
+      from: `"ระบบยืม-คืน" <${gmailUser}>`,
+      to,
+      subject,
+      text: message,
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.8; max-width: 720px;">
+          <h2 style="margin: 0 0 20px; font-size: 22px; color: #111827;">
+            ${safeSubject}
+          </h2>
+
+          <div style="font-size: 14px; line-height: 1.9; color: #1f2937;">
+            ${safeMessage}
+          </div>
+
+          <hr style="margin: 28px 0 16px; border: none; border-top: 1px solid #e5e7eb;" />
+
+          <p style="font-size: 12px; color: #6b7280; margin: 0;">
+            อีเมลนี้ส่งจากระบบยืม-คืนอุปกรณ์และขอใช้คอมพิวเตอร์
+          </p>
+        </div>
+      `,
+    });
+
     return {
       ok: true,
-      result,
+      result: {
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+      },
     };
   } catch (error: any) {
     return {
       ok: false,
-      error: error?.message || error,
+      error: {
+        message: error?.message || 'ส่งอีเมลไม่สำเร็จ',
+        code: error?.code || null,
+        response: error?.response || null,
+      },
     };
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const origin = new URL(request.url).origin;
     const now = new Date();
 
     const { data: requests, error } = await supabaseAdmin
@@ -225,7 +272,11 @@ export async function GET(request: Request) {
     let overdueCount = 0;
     let emailSentCount = 0;
     let emailFailedCount = 0;
+    let adminEmailSentCount = 0;
+    let adminEmailFailedCount = 0;
+
     const emailErrors: any[] = [];
+    const adminEmailErrors: any[] = [];
 
     for (const item of (requests || []) as any[]) {
       const returnAt = parseDateTime(item.return_date);
@@ -271,15 +322,11 @@ export async function GET(request: Request) {
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
 
-        const emailResult = await sendEmail(
-          origin,
-          userEmail,
-          title,
-          emailMessage
-        );
+        const emailResult = await sendEmail(userEmail, title, emailMessage);
 
         if (!emailResult.ok) {
           emailFailedCount++;
+
           emailErrors.push({
             requestId: item.id,
             requestNo,
@@ -333,15 +380,11 @@ export async function GET(request: Request) {
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
 
-        const emailResult = await sendEmail(
-          origin,
-          userEmail,
-          title,
-          emailMessage
-        );
+        const emailResult = await sendEmail(userEmail, title, emailMessage);
 
         if (!emailResult.ok) {
           emailFailedCount++;
+
           emailErrors.push({
             requestId: item.id,
             requestNo,
@@ -369,15 +412,13 @@ export async function GET(request: Request) {
           .eq('role', 'admin');
 
         if (admins && admins.length > 0) {
-          await Promise.all(
-            (admins as any[])
-              .filter((admin) => admin.email)
-              .map((admin) =>
-                sendEmail(
-                  origin,
-                  admin.email,
-                  'มีรายการเกินกำหนดคืนในระบบ',
-                  `เรียน ผู้ดูแลระบบ
+          for (const admin of admins as any[]) {
+            if (!admin.email) continue;
+
+            const adminEmailResult = await sendEmail(
+              admin.email,
+              'มีรายการเกินกำหนดคืนในระบบ',
+              `เรียน ผู้ดูแลระบบ
 
 ระบบตรวจพบรายการเกินกำหนดคืน
 
@@ -391,9 +432,22 @@ export async function GET(request: Request) {
 กำหนดคืน: ${returnDateText}
 
 กรุณาเข้าสู่ระบบเพื่อตรวจสอบและดำเนินการต่อ`
-                )
-              )
-          );
+            );
+
+            if (adminEmailResult.ok) {
+              adminEmailSentCount++;
+            } else {
+              adminEmailFailedCount++;
+
+              adminEmailErrors.push({
+                requestId: item.id,
+                requestNo,
+                to: admin.email,
+                type: 'admin_overdue',
+                error: adminEmailResult.error,
+              });
+            }
+          }
         }
 
         await supabaseAdmin
@@ -414,7 +468,10 @@ export async function GET(request: Request) {
       overdueCount,
       emailSentCount,
       emailFailedCount,
+      adminEmailSentCount,
+      adminEmailFailedCount,
       emailErrors,
+      adminEmailErrors,
     });
   } catch (error) {
     const err = error as Error;
