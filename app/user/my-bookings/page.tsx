@@ -678,7 +678,7 @@ export default function MyBookingsPage() {
 
   return (
     <DashboardLayout
-      title="ประวัติการจองของฉัน"
+      title="ประวัติการขอใช้งานและยืมของฉัน"
       actionButton={
         <Link href="/user/booking">
           <Button className="rounded-xl bg-slate-800 px-5 py-3 text-sm font-black text-white">
@@ -690,7 +690,7 @@ export default function MyBookingsPage() {
       <div className="space-y-4 pb-20">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-            ประวัติการจองของฉัน
+            ประวัติการขอใช้งานและยืมของฉัน
           </h1>
           <p className="mt-2 text-sm font-bold text-slate-400">
             ติดตามสถานะการจองและรายการยืมทั้งหมดของคุณ
