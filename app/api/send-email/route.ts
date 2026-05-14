@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 function escapeHtml(text: string) {
-  return String(text)
+  return String(text || '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -21,7 +22,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { to, subject, message } = await req.json();
+    const body = await req.json().catch(() => null);
+
+    if (!body) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'รูปแบบข้อมูลไม่ถูกต้อง',
+        },
+        { status: 400 }
+      );
+    }
+
+    const { to, subject, message } = body;
 
     if (!to || !subject || !message) {
       return NextResponse.json(
@@ -33,12 +46,15 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+
+    if (!gmailUser || !gmailPassword) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'ยังไม่ได้ตั้งค่า GMAIL_USER หรือ GMAIL_APP_PASSWORD ใน Environment Variables',
+            'ยังไม่ได้ตั้งค่า GMAIL_USER หรือ GMAIL_APP_PASSWORD ใน Vercel Environment Variables',
         },
         { status: 500 }
       );
@@ -50,15 +66,15 @@ export async function POST(req: Request) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        user: gmailUser,
+        pass: gmailPassword,
       },
     });
 
     await transporter.verify();
 
     const info = await transporter.sendMail({
-      from: `"ระบบยืม-คืน" <${process.env.GMAIL_USER}>`,
+      from: `"ระบบยืม-คืน" <${gmailUser}>`,
       to,
       subject,
       text: message,
