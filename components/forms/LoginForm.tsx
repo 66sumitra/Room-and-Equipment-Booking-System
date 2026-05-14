@@ -1,13 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
+type UserSession = {
+  user: {
+    id: string;
+    email?: string;
+    user_metadata?: {
+      full_name?: string;
+      name?: string;
+      avatar_url?: string;
+    };
+  };
+};
+
 export const LoginForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -19,6 +32,92 @@ export const LoginForm: React.FC = () => {
     email: '',
     password: '',
   });
+
+  const getDisplayName = (session: UserSession) => {
+    const metadata = session.user.user_metadata;
+
+    return (
+      metadata?.full_name ||
+      metadata?.name ||
+      session.user.email?.split('@')[0] ||
+      'ผู้ใช้งาน'
+    );
+  };
+
+  const goToPageByRole = async (session: UserSession) => {
+    const email = session.user.email || '';
+    const name = getDisplayName(session);
+
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    console.log('PROFILE AFTER LOGIN:', profile, profileError);
+
+    if (!profile) {
+      const { error: insertError } = await supabase.from('users').insert([
+        {
+          id: session.user.id,
+          email,
+          name,
+          role: 'user',
+        },
+      ]);
+
+      if (insertError) {
+        console.warn('CREATE USER PROFILE ERROR:', insertError);
+      }
+    }
+
+    const role = profile?.role || 'user';
+    const target = role === 'admin' ? '/dashboard' : '/user/booking';
+
+    window.location.href = target;
+  };
+
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      if (typeof window === 'undefined') return;
+
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+
+      if (!code) return;
+
+      setGoogleLoading(true);
+
+      try {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        if (error) {
+          alert('เข้าสู่ระบบด้วย Google ไม่สำเร็จ: ' + error.message);
+          return;
+        }
+
+        const session =
+          data.session ||
+          (await supabase.auth.getSession()).data.session;
+
+        if (!session) {
+          alert('เข้าสู่ระบบด้วย Google สำเร็จ แต่ยังไม่พบ session');
+          return;
+        }
+
+        await goToPageByRole(session as UserSession);
+      } catch (error: any) {
+        console.error('Google callback error:', error);
+        alert('เข้าสู่ระบบด้วย Google ไม่สำเร็จ: ' + error.message);
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    handleOAuthCallback();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -64,6 +163,32 @@ export const LoginForm: React.FC = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        alert('เข้าสู่ระบบด้วย Google ไม่สำเร็จ: ' + error.message);
+        setGoogleLoading(false);
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      alert('เข้าสู่ระบบด้วย Google ไม่สำเร็จ: ' + error.message);
+      setGoogleLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -101,17 +226,7 @@ export const LoginForm: React.FC = () => {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      console.log('PROFILE AFTER LOGIN:', profile, profileError);
-
-      const target = profile?.role === 'admin' ? '/dashboard' : '/user/booking';
-
-      window.location.href = target;
+      await goToPageByRole(session as UserSession);
     } catch (error: any) {
       console.error('Login error:', error);
       alert('เข้าสู่ระบบไม่สำเร็จ: ' + error.message);
@@ -122,11 +237,11 @@ export const LoginForm: React.FC = () => {
 
   return (
     <>
-      <div className="w-full max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="mx-auto w-full max-w-md">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
           <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-700 px-8 py-10 text-center text-white">
-            <h2 className="text-2xl font-bold mb-1">เข้าสู่ระบบ</h2>
-            <p className="text-blue-100 text-sm opacity-80">
+            <h2 className="mb-1 text-2xl font-bold">เข้าสู่ระบบ</h2>
+            <p className="text-sm text-blue-100 opacity-80">
               ระบบจัดการห้องคอมพิวเตอร์และอุปกรณ์
             </p>
           </div>
@@ -140,7 +255,7 @@ export const LoginForm: React.FC = () => {
                 placeholder="example@gmail.com"
                 value={formData.email}
                 onChange={handleChange}
-                disabled={loading}
+                disabled={loading || googleLoading}
               />
 
               <div>
@@ -151,14 +266,15 @@ export const LoginForm: React.FC = () => {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                 />
 
                 <div className="mt-2 flex justify-end">
                   <button
                     type="button"
                     onClick={openForgotPassword}
-                    className="text-xs font-bold text-blue-600 hover:underline"
+                    disabled={loading || googleLoading}
+                    className="text-xs font-bold text-blue-600 hover:underline disabled:opacity-50"
                   >
                     ลืมรหัสผ่าน?
                   </button>
@@ -170,11 +286,29 @@ export const LoginForm: React.FC = () => {
                 variant="primary"
                 size="lg"
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg"
-                disabled={loading}
+                disabled={loading || googleLoading}
               >
                 {loading ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ'}
               </Button>
             </form>
+
+            <div className="my-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-bold text-slate-400">หรือ</span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading || googleLoading}
+              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-lg">
+                G
+              </span>
+              {googleLoading ? 'กำลังเข้าสู่ระบบด้วย Google...' : 'เข้าสู่ระบบด้วย Google'}
+            </button>
 
             <div className="mt-6 text-center text-sm text-slate-600">
               ยังไม่มีบัญชี?{' '}
@@ -213,7 +347,7 @@ export const LoginForm: React.FC = () => {
                 label="อีเมล"
                 placeholder="example@gmail.com"
                 value={forgotEmail}
-                onChange={(e: any) => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setForgotEmail(e.target.value);
                   setForgotError('');
                   setForgotMessage('');
@@ -238,7 +372,7 @@ export const LoginForm: React.FC = () => {
                   type="button"
                   onClick={() => setForgotOpen(false)}
                   disabled={forgotLoading}
-                  className="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-black text-slate-500"
+                  className="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-black text-slate-500 disabled:opacity-60"
                 >
                   ยกเลิก
                 </button>
@@ -247,7 +381,7 @@ export const LoginForm: React.FC = () => {
                   type="button"
                   onClick={handleForgotPassword}
                   disabled={forgotLoading}
-                  className="flex-[1.5] rounded-2xl bg-blue-600 py-3 text-sm font-black text-white shadow-lg shadow-blue-100"
+                  className="flex-[1.5] rounded-2xl bg-blue-600 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 disabled:opacity-60"
                 >
                   {forgotLoading ? 'กำลังส่ง...' : 'ส่งลิงก์รีเซ็ต'}
                 </button>
