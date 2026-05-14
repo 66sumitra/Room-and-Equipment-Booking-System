@@ -431,6 +431,28 @@ export default function ApprovalsPage() {
     }
   };
 
+  const getEmailDisplayName = async (req: any) => {
+    const rawName = typeof req?.user_name === 'string' ? req.user_name.trim() : '';
+
+    if (rawName && !rawName.includes('@')) {
+      return rawName;
+    }
+
+    if (req?.user_email) {
+      const { data: userProfile, error } = await supabase
+        .from('users')
+        .select('name, email')
+        .eq('email', req.user_email)
+        .maybeSingle();
+
+      if (!error && userProfile?.name && !userProfile.name.includes('@')) {
+        return userProfile.name;
+      }
+    }
+
+    return 'ผู้ใช้งาน';
+  };
+
   const handleFinalAction = async () => {
     if (!selected) return;
 
@@ -445,8 +467,7 @@ export default function ApprovalsPage() {
       const itemName = getRequestTitle(selected);
       const itemTypeText = getRequestTypeLabel(selected);
       const itemSubtitle = getRequestSubtitle(selected);
-      const userDisplayName =
-        selected.user_name || selected.user_email || 'ผู้ใช้งาน';
+      const userDisplayName = await getEmailDisplayName(selected);
 
       if (actionType === 'approve') {
         const title = 'แจ้งผลการอนุมัติคำขอใช้งาน';
