@@ -322,17 +322,13 @@ export default function ApprovalsPage() {
       const itemName = getRequestTitle(selected);
       const itemTypeText = getRequestTypeLabel(selected);
       const itemSubtitle = getRequestSubtitle(selected);
+      const userDisplayName =
+        selected.user_name || selected.user_email || 'ผู้ใช้งาน';
 
       if (actionType === 'approve') {
-        const title = 'คำขอได้รับการอนุมัติ';
-        const message =
-          selected.request_type === 'computer'
-            ? `คำขอใช้งาน ${
-                selected.computers?.pc_name || 'คอมพิวเตอร์'
-              } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo}`
-            : `คำขอยืม ${
-                selected.equipment?.name || 'อุปกรณ์'
-              } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo} รหัสอุปกรณ์ ${itemCode}`;
+        const title = 'แจ้งผลการอนุมัติคำขอใช้งาน';
+
+        const message = `ระบบได้อนุมัติคำขอของท่านเรียบร้อยแล้ว รายละเอียดรายการ: ${itemName} ${itemCodeLabel}: ${itemCode} เลขคำขอยืม: ${requestNo} กรุณาคืนรายการภายในวันและเวลาที่กำหนด`;
 
         if (selected.request_type === 'computer') {
           const { data: computerData, error: computerFetchError } =
@@ -422,9 +418,9 @@ export default function ApprovalsPage() {
         await sendEmail(
           selected.user_email,
           title,
-          `เรียน คุณ${selected.user_name || selected.user_email || 'ผู้ใช้งาน'}
+          `เรียน คุณ${userDisplayName}
 
-ระบบขอแจ้งให้ทราบว่า คำขอของท่านได้รับการอนุมัติเรียบร้อยแล้ว
+ระบบขอแจ้งให้ทราบว่า คำขอใช้งานของท่านได้รับการอนุมัติเรียบร้อยแล้ว
 
 รายละเอียดคำขอ
 เลขคำขอยืม: ${requestNo}
@@ -435,7 +431,9 @@ ${itemCodeLabel}: ${itemCode}
 วันที่เริ่มยืม: ${formatThaiDateTime(selected.borrow_date)}
 วันที่กำหนดคืน: ${formatThaiDateTime(selected.return_date)}
 
-กรุณาคืนรายการดังกล่าวภายในวันและเวลาที่กำหนด เพื่อให้เป็นไปตามระเบียบการยืม–คืนของหน่วยงาน
+กรุณาตรวจสอบรายละเอียดรายการ และดำเนินการใช้งานตามวันและเวลาที่ได้รับอนุมัติ
+
+ทั้งนี้ ผู้ใช้งานต้องคืนรายการดังกล่าวภายในวันและเวลาที่กำหนด หากคืนล่าช้าหรือไม่คืนตามกำหนด อาจมีการดำเนินการตามระเบียบของหน่วยงาน
 
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
@@ -452,15 +450,9 @@ ${itemCodeLabel}: ${itemCode}
           return;
         }
 
-        const title = 'คำขอไม่ได้รับการอนุมัติ';
-        const message =
-          selected.request_type === 'computer'
-            ? `คำขอใช้งาน ${
-                selected.computers?.pc_name || 'คอมพิวเตอร์'
-              } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} เนื่องจาก ${finalRejectReason}`
-            : `คำขอยืม ${
-                selected.equipment?.name || 'อุปกรณ์'
-              } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} รหัสอุปกรณ์ ${itemCode} เนื่องจาก ${finalRejectReason}`;
+        const title = 'แจ้งผลการพิจารณาคำขอใช้งาน';
+
+        const message = `ระบบได้พิจารณาคำขอของท่านแล้ว และไม่สามารถอนุมัติคำขอนี้ได้ รายละเอียดรายการ: ${itemName} ${itemCodeLabel}: ${itemCode} เลขคำขอยืม: ${requestNo} เหตุผล: ${finalRejectReason}`;
 
         const { error: reqError } = await supabase
           .from('borrow_requests')
@@ -486,9 +478,9 @@ ${itemCodeLabel}: ${itemCode}
         await sendEmail(
           selected.user_email,
           title,
-          `เรียน คุณ${selected.user_name || selected.user_email || 'ผู้ใช้งาน'}
+          `เรียน คุณ${userDisplayName}
 
-ระบบขอแจ้งให้ทราบว่า คำขอของท่านไม่ได้รับการอนุมัติ
+ระบบขอแจ้งให้ทราบว่า คำขอใช้งานของท่านไม่ได้รับการอนุมัติ
 
 รายละเอียดคำขอ
 เลขคำขอยืม: ${requestNo}
@@ -498,9 +490,11 @@ ${itemCodeLabel}: ${itemCode}
 รายละเอียด: ${itemSubtitle}
 วันที่เริ่มยืม: ${formatThaiDateTime(selected.borrow_date)}
 วันที่กำหนดคืน: ${formatThaiDateTime(selected.return_date)}
-เหตุผลการปฏิเสธ: ${finalRejectReason}
 
-กรุณาตรวจสอบข้อมูลและดำเนินการส่งคำขอใหม่อีกครั้ง หากต้องการใช้งานรายการดังกล่าว
+เหตุผลการไม่อนุมัติ
+${finalRejectReason}
+
+กรุณาตรวจสอบรายละเอียดคำขอ และดำเนินการส่งคำขอใหม่อีกครั้ง หากยังต้องการใช้งานรายการดังกล่าว
 
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
@@ -510,15 +504,9 @@ ${itemCodeLabel}: ${itemCode}
       }
 
       if (actionType === 'confirm_return') {
-        const title = 'คืนเสร็จสิ้น';
-        const message =
-          selected.request_type === 'computer'
-            ? `แอดมินยืนยันรับคืน ${
-                selected.computers?.pc_name || 'คอมพิวเตอร์'
-              } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo}`
-            : `แอดมินยืนยันรับคืน ${
-                selected.equipment?.name || 'อุปกรณ์'
-              } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo} รหัสอุปกรณ์ ${itemCode}`;
+        const title = 'แจ้งผลการยืนยันรับคืนรายการ';
+
+        const message = `เจ้าหน้าที่ได้ยืนยันการรับคืนรายการของท่านเรียบร้อยแล้ว รายละเอียดรายการ: ${itemName} ${itemCodeLabel}: ${itemCode} เลขคำขอยืม: ${requestNo}`;
 
         const { error: reqError } = await supabase
           .from('borrow_requests')
@@ -571,7 +559,7 @@ ${itemCodeLabel}: ${itemCode}
         await sendEmail(
           selected.user_email,
           title,
-          `เรียน คุณ${selected.user_name || selected.user_email || 'ผู้ใช้งาน'}
+          `เรียน คุณ${userDisplayName}
 
 ระบบขอแจ้งให้ทราบว่า เจ้าหน้าที่ได้ยืนยันการรับคืนรายการของท่านเรียบร้อยแล้ว
 
