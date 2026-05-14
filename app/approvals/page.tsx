@@ -73,63 +73,133 @@ export default function ApprovalsPage() {
     try {
       setLoading(true);
 
-      const baseSelect = `
-        id,
-        request_no,
-        user_name,
-        user_email,
-        borrow_date,
-        return_date,
-        status,
-        request_type,
-        equipment_id,
-        computer_id,
-        reason,
-        reject_reason,
-        urgent,
-        created_at,
-        approved_at,
-        returned_at,
-        approved_by,
-        equipment (
-          id,
-          name,
-          category,
-          code,
-          equipment_code,
-          item_code,
-          available_stock,
-          status
-        ),
-        computers (
-          id,
-          pc_name,
-          room_name,
-          status
-        )
-      `;
-
-      const { data: pendingData, error: pendingError } = await supabase
+      const { data: requestData, error: requestError } = await supabase
         .from('borrow_requests')
-        .select(baseSelect)
-        .eq('status', 'pending')
+        .select(
+          `
+          id,
+          request_no,
+          user_name,
+          user_email,
+          borrow_date,
+          return_date,
+          status,
+          request_type,
+          equipment_id,
+          computer_id,
+          reason,
+          reject_reason,
+          urgent,
+          created_at,
+          approved_at,
+          returned_at,
+          approved_by
+        `
+        )
+        .in('status', ['pending', 'return_pending', 'return_requested'])
         .order('urgent', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (pendingError) throw pendingError;
+      if (requestError) {
+        console.error('borrow_requests error:', requestError);
+        throw requestError;
+      }
 
-      const { data: returnData, error: returnError } = await supabase
-        .from('borrow_requests')
-        .select(baseSelect)
-        .in('status', RETURN_PENDING_STATUSES)
-        .order('created_at', { ascending: false });
+      const rows = requestData || [];
 
-      if (returnError) throw returnError;
+      const equipmentIds = Array.from(
+        new Set(
+          rows
+            .filter(
+              (item) =>
+                item.request_type === 'equipment' && item.equipment_id
+            )
+            .map((item) => item.equipment_id)
+        )
+      );
 
-      setRequests(pendingData || []);
-      setReturnRequests(returnData || []);
+      const computerIds = Array.from(
+        new Set(
+          rows
+            .filter(
+              (item) => item.request_type === 'computer' && item.computer_id
+            )
+            .map((item) => item.computer_id)
+        )
+      );
+
+      let equipmentMap = new Map<string, any>();
+      let computerMap = new Map<string, any>();
+
+      if (equipmentIds.length > 0) {
+        const { data: equipmentData, error: equipmentError } = await supabase
+          .from('equipment')
+          .select(
+            `
+            id,
+            name,
+            category,
+            code,
+            equipment_code,
+            item_code,
+            available_stock,
+            status
+          `
+          )
+          .in('id', equipmentIds);
+
+        if (equipmentError) {
+          console.error('equipment error:', equipmentError);
+        }
+
+        equipmentMap = new Map(
+          (equipmentData || []).map((item) => [item.id, item])
+        );
+      }
+
+      if (computerIds.length > 0) {
+        const { data: computerData, error: computerError } = await supabase
+          .from('computers')
+          .select(
+            `
+            id,
+            pc_name,
+            room_name,
+            status
+          `
+          )
+          .in('id', computerIds);
+
+        if (computerError) {
+          console.error('computers error:', computerError);
+        }
+
+        computerMap = new Map(
+          (computerData || []).map((item) => [item.id, item])
+        );
+      }
+
+      const mergedRows = rows.map((item) => ({
+        ...item,
+        equipment:
+          item.request_type === 'equipment'
+            ? equipmentMap.get(item.equipment_id) || null
+            : null,
+        computers:
+          item.request_type === 'computer'
+            ? computerMap.get(item.computer_id) || null
+            : null,
+      }));
+
+      setRequests(mergedRows.filter((item) => item.status === 'pending'));
+
+      setReturnRequests(
+        mergedRows.filter((item) =>
+          RETURN_PENDING_STATUSES.includes(item.status)
+        )
+      );
     } catch (error: any) {
-      console.warn('fetchRequests warning:', error.message);
+      console.warn('fetchRequests warning:', error?.message || error);
       setRequests([]);
       setReturnRequests([]);
     } finally {
