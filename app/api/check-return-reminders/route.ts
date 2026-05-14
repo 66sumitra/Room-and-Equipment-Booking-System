@@ -60,6 +60,10 @@ function getReminderTime(borrowDate: string, returnDate: string) {
   return new Date(returnAt.getTime() - 15 * 60 * 1000);
 }
 
+function getRequestNo(item: any) {
+  return item?.request_no || 'ยังไม่มีเลขคำขอ';
+}
+
 async function sendEmail(
   origin: string,
   to: string | null | undefined,
@@ -100,6 +104,7 @@ export async function GET(request: Request) {
       .select(
         `
         id,
+        request_no,
         request_type,
         user_name,
         user_email,
@@ -147,6 +152,10 @@ export async function GET(request: Request) {
           ? computerData?.pc_name || 'คอมพิวเตอร์'
           : equipmentData?.name || 'อุปกรณ์';
 
+      const itemTypeText =
+        item.request_type === 'computer' ? 'คอมพิวเตอร์' : 'อุปกรณ์';
+
+      const requestNo = getRequestNo(item);
       const userEmail = item.user_email;
       const userName = item.user_name || userEmail || 'ผู้ใช้งาน';
 
@@ -171,7 +180,7 @@ export async function GET(request: Request) {
         }
 
         const title = 'แจ้งเตือนกำหนดคืนอุปกรณ์ตามรายการยืม';
-        const message = `ขอแจ้งให้ทราบว่า รายการยืม ${itemName} ของท่านใกล้ถึงกำหนดคืนตามวันและเวลาที่ระบุไว้ในระบบ กรุณาดำเนินการคืนอุปกรณ์ภายใน ${formatThaiDateTime(
+        const message = `ขอแจ้งให้ทราบว่า รายการยืม ${itemName} เลขคำขอยืม ${requestNo} ใกล้ถึงกำหนดคืนตามวันและเวลาที่ระบุไว้ในระบบ กรุณาดำเนินการคืน${itemTypeText}ภายใน ${formatThaiDateTime(
           item.return_date
         )}`;
 
@@ -188,16 +197,18 @@ export async function GET(request: Request) {
         await sendEmail(
           origin,
           userEmail,
-          'แจ้งเตือนกำหนดคืนอุปกรณ์ตามรายการยืม',
+          title,
           `เรียน คุณ${userName}
 
-ระบบขอแจ้งเตือนว่า รายการยืมอุปกรณ์ของท่านใกล้ถึงกำหนดคืนตามวันและเวลาที่ระบุไว้ในระบบ
+ระบบขอแจ้งเตือนว่า รายการยืม${itemTypeText}ของท่านใกล้ถึงกำหนดคืนตามวันและเวลาที่ระบุไว้ในระบบ
 
 รายละเอียดรายการ
-รายการอุปกรณ์: ${itemName}
+เลขคำขอยืม: ${requestNo}
+ประเภท: ${itemTypeText}
+รายการ: ${itemName}
 กำหนดคืน: ${formatThaiDateTime(item.return_date)}
 
-กรุณาดำเนินการคืนอุปกรณ์ภายในวันและเวลาที่กำหนด เพื่อให้เป็นไปตามระเบียบการยืม–คืนอุปกรณ์ของหน่วยงาน
+กรุณาดำเนินการคืน${itemTypeText}ภายในวันและเวลาที่กำหนด เพื่อให้เป็นไปตามระเบียบการยืม–คืนของหน่วยงาน
 
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
@@ -223,7 +234,7 @@ export async function GET(request: Request) {
         }
 
         const title = 'แจ้งเตือนรายการยืมอุปกรณ์เกินกำหนดคืน';
-        const message = `ระบบตรวจพบว่ารายการยืม ${itemName} ของท่านเกินกำหนดคืนตามวันและเวลาที่ระบุไว้ กรุณาดำเนินการคืนอุปกรณ์โดยเร็วที่สุด หรือติดต่อเจ้าหน้าที่ผู้ดูแลระบบ`;
+        const message = `ระบบตรวจพบว่ารายการยืม ${itemName} เลขคำขอยืม ${requestNo} เกินกำหนดคืนตามวันและเวลาที่ระบุไว้ กรุณาดำเนินการคืน${itemTypeText}โดยเร็วที่สุด หรือติดต่อเจ้าหน้าที่ผู้ดูแลระบบ`;
 
         await supabaseAdmin.from('notifications').insert([
           {
@@ -238,18 +249,20 @@ export async function GET(request: Request) {
         await sendEmail(
           origin,
           userEmail,
-          'แจ้งเตือนรายการยืมอุปกรณ์เกินกำหนดคืน',
+          title,
           `เรียน คุณ${userName}
 
-ระบบตรวจพบว่า รายการยืมอุปกรณ์ของท่านเกินกำหนดคืนตามวันและเวลาที่ระบุไว้ในระบบ
+ระบบตรวจพบว่า รายการยืม${itemTypeText}ของท่านเกินกำหนดคืนตามวันและเวลาที่ระบุไว้ในระบบ
 
 รายละเอียดรายการ
-รายการอุปกรณ์: ${itemName}
+เลขคำขอยืม: ${requestNo}
+ประเภท: ${itemTypeText}
+รายการ: ${itemName}
 กำหนดคืน: ${formatThaiDateTime(item.return_date)}
 
-กรุณาดำเนินการคืนอุปกรณ์โดยเร็วที่สุด หรือติดต่อเจ้าหน้าที่ผู้ดูแลระบบเพื่อดำเนินการตามขั้นตอนที่เกี่ยวข้อง
+กรุณาดำเนินการคืน${itemTypeText}โดยเร็วที่สุด หรือติดต่อเจ้าหน้าที่ผู้ดูแลระบบเพื่อดำเนินการตามขั้นตอนที่เกี่ยวข้อง
 
-ทั้งนี้ หากไม่ดำเนินการคืนอุปกรณ์ภายในระยะเวลาที่กำหนด อาจมีการดำเนินการตามระเบียบของหน่วยงาน
+ทั้งนี้ หากไม่ดำเนินการคืน${itemTypeText}ภายในระยะเวลาที่กำหนด อาจมีการดำเนินการตามระเบียบของหน่วยงาน
 
 ขอแสดงความนับถือ
 ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
@@ -271,12 +284,14 @@ export async function GET(request: Request) {
                   'แจ้งรายการยืมอุปกรณ์เกินกำหนดคืนสำหรับเจ้าหน้าที่',
                   `เรียน เจ้าหน้าที่ผู้ดูแลระบบ
 
-ระบบตรวจพบรายการยืมอุปกรณ์ที่เกินกำหนดคืนตามวันและเวลาที่ระบุไว้
+ระบบตรวจพบรายการยืม${itemTypeText}ที่เกินกำหนดคืนตามวันและเวลาที่ระบุไว้
 
 รายละเอียดรายการ
+เลขคำขอยืม: ${requestNo}
 ผู้ยืม: ${userName}
 อีเมลผู้ยืม: ${userEmail}
-รายการอุปกรณ์: ${itemName}
+ประเภท: ${itemTypeText}
+รายการ: ${itemName}
 กำหนดคืน: ${formatThaiDateTime(item.return_date)}
 
 กรุณาเข้าสู่ระบบเพื่อตรวจสอบข้อมูล และดำเนินการติดตามรายการดังกล่าวตามขั้นตอนของหน่วยงาน
