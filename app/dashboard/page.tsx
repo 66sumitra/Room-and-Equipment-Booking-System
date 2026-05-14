@@ -69,12 +69,30 @@ export default function DashboardPage() {
     return item.user_name || item.user_email || 'ไม่ทราบชื่อผู้ใช้';
   };
 
-  const getItemCode = (item: Booking) => {
+  const getItemDetail = (item: Booking) => {
     if (item.request_type === 'computer') {
-      return item.computers?.room_name || item.computers?.pc_name || 'COMPUTER';
+      return item.computers?.room_name || 'ไม่ระบุห้อง';
     }
 
-    return item.equipment?.category || item.item_code || 'EQUIPMENT';
+    return item.equipment?.category || item.item_code || 'ไม่ระบุหมวดหมู่';
+  };
+
+  const getItemCode = (item: Booking) => {
+    if (item.request_type === 'computer') {
+      return item.computers?.pc_name || 'ไม่มีรหัสคอมพิวเตอร์';
+    }
+
+    return (
+      item.equipment?.code ||
+      item.equipment?.equipment_code ||
+      item.equipment?.item_code ||
+      item.item_code ||
+      'ไม่มีรหัสอุปกรณ์'
+    );
+  };
+
+  const getItemCodeLabel = (item: Booking) => {
+    return item.request_type === 'computer' ? 'รหัสคอมพิวเตอร์' : 'รหัสอุปกรณ์';
   };
 
   const getRequestNo = (item: Booking) => {
@@ -82,8 +100,14 @@ export default function DashboardPage() {
   };
 
   const RequestNoBadge = ({ item }: { item: Booking }) => (
-    <div className="mt-1 inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
+    <div className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
       เลขคำขอยืม: {getRequestNo(item)}
+    </div>
+  );
+
+  const ItemCodeBadge = ({ item }: { item: Booking }) => (
+    <div className="inline-flex w-fit rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-black text-indigo-700">
+      {getItemCodeLabel(item)}: {getItemCode(item)}
     </div>
   );
 
@@ -141,8 +165,22 @@ export default function DashboardPage() {
         created_at,
         approved_at,
         returned_at,
-        equipment ( id, name, category, available_stock, status ),
-        computers ( id, pc_name, room_name, status )
+        equipment (
+          id,
+          name,
+          category,
+          code,
+          equipment_code,
+          item_code,
+          available_stock,
+          status
+        ),
+        computers (
+          id,
+          pc_name,
+          room_name,
+          status
+        )
       `;
 
       const [computersRes, recentRes, allRequestsRes] = await Promise.all([
@@ -174,8 +212,12 @@ export default function DashboardPage() {
         isReturnPendingStatus(item.status)
       );
 
-      const urgentPending = pendingRequests.filter((item) => item.urgent === true);
-      const normalPending = pendingRequests.filter((item) => item.urgent !== true);
+      const urgentPending = pendingRequests.filter(
+        (item) => item.urgent === true
+      );
+      const normalPending = pendingRequests.filter(
+        (item) => item.urgent !== true
+      );
 
       const mergedPending = [...urgentPending, ...normalPending]
         .sort((a, b) => {
@@ -364,7 +406,13 @@ export default function DashboardPage() {
                                 : 'bg-blue-50 text-blue-600'
                             }`}
                           >
-                            {b.status === 'returned' ? '✅' : b.urgent ? '🚨' : '💻'}
+                            {b.status === 'returned'
+                              ? '✅'
+                              : b.urgent
+                              ? '🚨'
+                              : b.request_type === 'computer'
+                              ? '💻'
+                              : '📦'}
                           </div>
 
                           <div className="min-w-0 space-y-1">
@@ -380,24 +428,32 @@ export default function DashboardPage() {
                               )}
                             </div>
 
-                            <RequestNoBadge item={b} />
+                            <div className="flex flex-wrap gap-2">
+                              <RequestNoBadge item={b} />
+                              <ItemCodeBadge item={b} />
+                            </div>
 
                             <p className="text-xs font-bold text-slate-500">
                               ผู้จอง: {getUserDisplayName(b)}
                             </p>
 
                             <p className="text-xs font-bold text-slate-400">
-                              รายละเอียด: {getItemCode(b)}
+                              รายละเอียด: {getItemDetail(b)}
                             </p>
 
                             <p className="text-xs font-bold text-slate-400">
                               วันที่ขอ:{' '}
-                              {new Date(b.created_at).toLocaleDateString('th-TH')}{' '}
+                              {new Date(b.created_at).toLocaleDateString(
+                                'th-TH'
+                              )}{' '}
                               เวลา{' '}
-                              {new Date(b.created_at).toLocaleTimeString('th-TH', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}{' '}
+                              {new Date(b.created_at).toLocaleTimeString(
+                                'th-TH',
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }
+                              )}{' '}
                               น.
                             </p>
 
@@ -462,10 +518,13 @@ export default function DashboardPage() {
                             )}
                           </div>
 
-                          <RequestNoBadge item={req} />
+                          <div className="flex flex-wrap gap-2">
+                            <RequestNoBadge item={req} />
+                            <ItemCodeBadge item={req} />
+                          </div>
 
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                            {getItemCode(req)}
+                          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            {getItemDetail(req)}
                           </p>
 
                           {req.reason && (
@@ -499,10 +558,13 @@ export default function DashboardPage() {
                           }`}
                         >
                           ⏰{' '}
-                          {new Date(req.created_at).toLocaleTimeString('th-TH', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}{' '}
+                          {new Date(req.created_at).toLocaleTimeString(
+                            'th-TH',
+                            {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }
+                          )}{' '}
                           น.
                         </div>
                       </div>
@@ -510,7 +572,10 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-10 text-center md:rounded-[2.5rem] md:p-12">
-                    <CheckCircle2 size={32} className="mx-auto mb-2 text-slate-300" />
+                    <CheckCircle2
+                      size={32}
+                      className="mx-auto mb-2 text-slate-300"
+                    />
                     <p className="text-sm font-bold italic tracking-tight text-slate-400">
                       ไม่มีรายการค้าง
                     </p>
