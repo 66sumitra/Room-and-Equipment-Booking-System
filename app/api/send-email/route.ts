@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+export const dynamic = 'force-dynamic';
+
 function escapeHtml(text: string) {
-  return text
+  return String(text)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -10,12 +12,36 @@ function escapeHtml(text: string) {
     .replaceAll("'", '&#039;');
 }
 
+export async function GET() {
+  return NextResponse.json({
+    success: true,
+    message: 'send-email api is working. Use POST to send email.',
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const { to, subject, message } = await req.json();
 
     if (!to || !subject || !message) {
-      return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'ข้อมูลไม่ครบ กรุณาระบุ to, subject และ message',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'ยังไม่ได้ตั้งค่า GMAIL_USER หรือ GMAIL_APP_PASSWORD ใน Environment Variables',
+        },
+        { status: 500 }
+      );
     }
 
     const safeSubject = escapeHtml(subject);
@@ -28,6 +54,8 @@ export async function POST(req: Request) {
         pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
+
+    await transporter.verify();
 
     const info = await transporter.sendMail({
       from: `"ระบบยืม-คืน" <${process.env.GMAIL_USER}>`,
@@ -53,11 +81,23 @@ export async function POST(req: Request) {
       `,
     });
 
-    return NextResponse.json({ success: true, info });
+    return NextResponse.json({
+      success: true,
+      message: 'ส่งอีเมลสำเร็จ',
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+    });
   } catch (error: any) {
     console.warn('send-email route warning:', error);
+
     return NextResponse.json(
-      { error: error.message || 'ส่งอีเมลไม่สำเร็จ' },
+      {
+        success: false,
+        error: error?.message || 'ส่งอีเมลไม่สำเร็จ',
+        code: error?.code || null,
+        response: error?.response || null,
+      },
       { status: 500 }
     );
   }
