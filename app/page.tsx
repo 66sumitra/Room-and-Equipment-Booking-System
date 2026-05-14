@@ -24,7 +24,7 @@ export default function Home() {
           </div>
 
           <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl">
-            ระบบยืมหอุปกรณ์และขอใช้คอมพิวเตอร์สำหรับนักศึกษาและบุคลากร
+            ระบบยืมอุปกรณ์และขอใช้คอมพิวเตอร์สำหรับนักศึกษาและบุคลากร
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-base font-medium leading-relaxed text-slate-500 md:text-lg">

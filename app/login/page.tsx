@@ -32,43 +32,82 @@ export default function LoginPage() {
     const userEmail = user?.email || "";
     const userName = getUserName(user);
 
-    const { data: profile, error: profileError } = await supabase
+    if (!user?.id || !userEmail) {
+      setError("ไม่พบข้อมูลอีเมลจาก Google");
+      await supabase.auth.signOut();
+      return;
+    }
+
+    // 1) หา user ด้วย id ก่อน
+    let { data: profile, error: profileError } = await supabase
       .from("users")
       .select("id, role, email_verified")
       .eq("id", user.id)
       .maybeSingle();
 
     if (profileError) {
+      console.error("Find profile by id error:", profileError);
       setError("ไม่สามารถตรวจสอบข้อมูลผู้ใช้ได้");
       return;
     }
 
+    // 2) ถ้าไม่เจอด้วย id ให้หา email ต่อ
     if (!profile) {
-      const { error: insertError } = await supabase.from("users").insert([
-        {
-          id: user.id,
-          name: userName,
-          email: userEmail,
-          role: "user",
-          email_verified: true,
-        },
-      ]);
+      const { data: profileByEmail, error: emailProfileError } = await supabase
+        .from("users")
+        .select("id, role, email_verified")
+        .eq("email", userEmail)
+        .maybeSingle();
 
-      if (insertError) {
-        console.error("Create Google user profile error:", insertError);
-        setError("เข้าสู่ระบบด้วย Google สำเร็จ แต่สร้างข้อมูลผู้ใช้ไม่สำเร็จ");
+      if (emailProfileError) {
+        console.error("Find profile by email error:", emailProfileError);
+        setError("ไม่สามารถตรวจสอบข้อมูลผู้ใช้จากอีเมลได้");
         return;
       }
 
-      window.location.href = "/user/booking";
-      return;
+      profile = profileByEmail;
     }
 
+    // 3) ถ้าไม่เจอจริง ๆ ให้สร้าง user ใหม่
+    if (!profile) {
+      const { data: insertedUser, error: insertError } = await supabase
+        .from("users")
+        .insert([
+          {
+            id: user.id,
+            email: userEmail,
+            name: userName,
+            role: "user",
+            email_verified: true,
+            password: null,
+            password_hash: null,
+          },
+        ])
+        .select("id, role, email_verified")
+        .single();
+
+      if (insertError) {
+        console.error("Create Google user profile error:", insertError);
+        setError(
+          "เข้าสู่ระบบด้วย Google สำเร็จ แต่สร้างข้อมูลผู้ใช้ไม่สำเร็จ: " +
+            insertError.message
+        );
+        return;
+      }
+
+      profile = insertedUser;
+    }
+
+    // 4) ถ้ามี user แล้วแต่ยังไม่ verify ให้ปรับเป็น true
     if (!profile.email_verified) {
-      await supabase
+      const { error: updateError } = await supabase
         .from("users")
         .update({ email_verified: true })
-        .eq("id", user.id);
+        .eq("email", userEmail);
+
+      if (updateError) {
+        console.warn("Update email verified error:", updateError);
+      }
     }
 
     const target = profile.role === "admin" ? "/dashboard" : "/user/booking";
@@ -188,7 +227,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (loading) return;
+    if (loading || googleLoading) return;
 
     setError("");
     setLoading(true);
@@ -250,7 +289,9 @@ export default function LoginPage() {
             <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-white/20 backdrop-blur-sm">
               <User size={32} />
             </div>
+
             <h2 className="text-2xl font-bold">ยินดีต้อนรับ</h2>
+
             <p className="mt-1 text-sm text-blue-50 opacity-90">
               เข้าสู่ระบบเพื่อใช้งาน
             </p>
@@ -268,11 +309,13 @@ export default function LoginPage() {
                 <label className="ml-1 text-xs font-semibold text-gray-500">
                   อีเมล
                 </label>
+
                 <div className="relative">
                   <Mail
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
                     type="email"
                     placeholder="Email"
@@ -289,11 +332,13 @@ export default function LoginPage() {
                 <label className="ml-1 text-xs font-semibold text-gray-500">
                   รหัสผ่าน
                 </label>
+
                 <div className="relative">
                   <Lock
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
                     type="password"
                     placeholder="รหัสผ่าน"
@@ -342,6 +387,7 @@ export default function LoginPage() {
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-black text-blue-600">
                 G
               </span>
+
               {googleLoading
                 ? "กำลังเข้าสู่ระบบด้วย Google..."
                 : "เข้าสู่ระบบด้วย Google"}
@@ -370,6 +416,7 @@ export default function LoginPage() {
                 <h3 className="text-2xl font-black text-slate-800">
                   ลืมรหัสผ่าน
                 </h3>
+
                 <p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">
                   กรอกอีเมลของคุณ ระบบจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้
                 </p>
@@ -389,11 +436,13 @@ export default function LoginPage() {
                 <label className="mb-2 block text-xs font-bold text-slate-500">
                   อีเมล
                 </label>
+
                 <div className="relative">
                   <Mail
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                     size={18}
                   />
+
                   <input
                     type="email"
                     placeholder="example@gmail.com"

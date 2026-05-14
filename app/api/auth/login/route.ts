@@ -5,8 +5,8 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    const cleanEmail = (email || '').trim();
-    const cleanPassword = (password || '').trim();
+    const cleanEmail = String(email || '').trim();
+    const cleanPassword = String(password || '');
 
     if (!cleanEmail || !cleanPassword) {
       return NextResponse.json(
@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerSupabaseClient();
 
-    // 1) ล็อกอินผ่าน Supabase Auth
     const { data: authData, error: authError } =
       await supabase.auth.signInWithPassword({
         email: cleanEmail,
@@ -34,15 +33,18 @@ export async function POST(request: NextRequest) {
 
     const user = authData.user;
 
-    // 2) ดึงข้อมูลเพิ่มจากตาราง users
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('id, email, name, full_name, username, role, email_verified')
+      .select('id, email, name, role, email_verified')
       .eq('id', user.id)
       .maybeSingle();
 
     if (profileError) {
       console.error('Profile error:', profileError.message);
+      return NextResponse.json(
+        { message: 'ไม่สามารถตรวจสอบข้อมูลผู้ใช้ได้' },
+        { status: 500 }
+      );
     }
 
     if (!profile) {
@@ -52,8 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3) เช็กว่ายืนยันอีเมลหรือยัง
-    if (!profile.email_verified) {
+    if (profile.email_verified === false) {
       await supabase.auth.signOut();
 
       return NextResponse.json(
@@ -65,10 +66,9 @@ export async function POST(request: NextRequest) {
     const role = profile.role || 'user';
 
     const fullName =
-      profile.full_name ||
       profile.name ||
-      profile.username ||
       user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
       user.email ||
       'User';
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (err: any) {
-    console.error('ระบบขัดข้อง:', err.message);
+    console.error('ระบบขัดข้อง:', err?.message || err);
     return NextResponse.json(
       { message: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์' },
       { status: 500 }
