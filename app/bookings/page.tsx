@@ -141,7 +141,7 @@ export default function AdminReportsPage() {
   };
 
   return (
-    <DashboardLayout title="Report System">
+    <DashboardLayout title="รายงานการยืม-คืนอุปกรณ์">
       <style jsx global>{`
         .print-only {
           display: none;
