@@ -73,6 +73,18 @@ function getThaiTimeText(time: string) {
   return '';
 }
 
+function generateRequestNo() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const timePart = String(now.getTime()).slice(-5);
+  const randomPart = Math.floor(100 + Math.random() * 900);
+
+  return `BR-${year}${month}${day}-${timePart}${randomPart}`;
+}
+
 function DateTimeField({
   label,
   type,
@@ -349,17 +361,17 @@ function DateTimePickerPopup({
                   กรอกเวลา
                 </label>
 
-               <input
-                    type="text"
-                 inputMode="numeric"
-                   value={customTime}
-                       onChange={(e) => {
-                            setCustomTime(e.target.value);
-                   setTimeError('');
-            }}
-                     placeholder="เช่น 09.00, 13.00, 19.00"
-                       className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition placeholder:text-slate-300 focus:ring-4 ${inputFocusClass}`}
-                        />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={customTime}
+                  onChange={(e) => {
+                    setCustomTime(e.target.value);
+                    setTimeError('');
+                  }}
+                  placeholder="เช่น 09.00, 13.00, 19.00"
+                  className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition placeholder:text-slate-300 focus:ring-4 ${inputFocusClass}`}
+                />
 
                 <p className="mt-2 text-xs font-bold text-slate-400">
                   ใช้เวลาแบบ 24 ชั่วโมง เช่น 09.00 = 9 โมงเช้า, 13.00 =
@@ -623,6 +635,7 @@ export default function BookingPage() {
     }
 
     const borrowerName = currentUserName || currentUserEmail || 'ผู้ใช้งาน';
+    const requestNo = generateRequestNo();
 
     const { data: insertedRequest, error: insertError } = await supabase
       .from('borrow_requests')
@@ -631,6 +644,7 @@ export default function BookingPage() {
           request_type: 'equipment',
           equipment_id: selected.id,
           computer_id: null,
+          request_no: requestNo,
           user_name: borrowerName,
           user_email: currentUserEmail,
           reason: form.reason.trim(),
@@ -660,7 +674,7 @@ export default function BookingPage() {
         adminList.map((admin) => ({
           user_email: admin.email,
           title: form.urgent ? 'มีคำขอด่วนใหม่' : 'มีคำขอใหม่',
-          message: `${borrowerName} ได้ส่งคำขอยืม ${selected.name}`,
+          message: `${borrowerName} ได้ส่งคำขอยืม ${selected.name} เลขคำขอ ${requestNo}`,
           type: form.urgent ? 'urgent_request' : 'new_request',
           related_request_id: insertedRequest.id,
         }))
@@ -674,6 +688,7 @@ export default function BookingPage() {
             `มีคำขอยืมอุปกรณ์ใหม่จากระบบ
 
 รายละเอียดคำขอ
+เลขคำขอยืม: ${requestNo}
 ผู้ขอยืม: ${borrowerName}
 อีเมลผู้ขอยืม: ${currentUserEmail}
 อุปกรณ์: ${selected.name}
