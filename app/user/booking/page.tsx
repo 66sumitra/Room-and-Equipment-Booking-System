@@ -35,7 +35,6 @@ type DateTimeFieldProps = {
 
 function formatTimeInput(input: string) {
   let value = input.replace(/[^\d.:]/g, '');
-
   value = value.replace('.', ':');
 
   if (/^\d{4}$/.test(value)) {
@@ -161,8 +160,12 @@ function DateTimePickerPopup({
   const initialDate =
     picker.type === 'date' && value ? new Date(`${value}T00:00:00`) : today;
 
-  const [customTime, setCustomTime] = useState(value || '');
-  const [timeError, setTimeError] = useState('');
+  const initialTime = isValidTime(value) ? value : '09:00';
+  const [initialHour, initialMinute] = initialTime.split(':');
+
+  const [selectedHour, setSelectedHour] = useState(initialHour);
+  const [selectedMinute, setSelectedMinute] = useState(initialMinute);
+
   const [selectedDay, setSelectedDay] = useState(
     String(initialDate.getDate())
   );
@@ -192,6 +195,14 @@ function DateTimePickerPopup({
   const yearOptions = Array.from(
     { length: 4 },
     (_, index) => currentYear + index
+  );
+
+  const hourOptions = Array.from({ length: 24 }, (_, index) =>
+    String(index).padStart(2, '0')
+  );
+
+  const minuteOptions = Array.from({ length: 12 }, (_, index) =>
+    String(index * 5).padStart(2, '0')
   );
 
   const daysInSelectedMonth = new Date(
@@ -226,8 +237,8 @@ function DateTimePickerPopup({
     year: 'numeric',
   });
 
-  const formattedCustomTime = formatTimeInput(customTime);
-  const timePreview = getThaiTimeText(formattedCustomTime);
+  const selectedTimeValue = `${selectedHour}:${selectedMinute}`;
+  const timePreview = getThaiTimeText(selectedTimeValue);
 
   const buttonClass =
     picker.color === 'blue'
@@ -262,7 +273,7 @@ function DateTimePickerPopup({
               <p className="mt-1 text-xs font-bold text-white/80">
                 {picker.type === 'date'
                   ? 'เลือกวัน เดือน ปี ได้เอง'
-                  : 'ใช้เวลาแบบ 24 ชั่วโมง ไม่ต้องเลือก AM/PM'}
+                  : 'เลือกเวลาแบบ 24 ชั่วโมง ไม่ต้องเลือก AM/PM'}
               </p>
             </div>
 
@@ -360,69 +371,73 @@ function DateTimePickerPopup({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-[24px] border border-slate-100 bg-slate-50 p-4">
-                <label className="mb-2 block text-sm font-black text-slate-700">
-                  กรอกเวลา
-                </label>
-
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={customTime}
-                  onChange={(e) => {
-                    setCustomTime(e.target.value);
-                    setTimeError('');
-                  }}
-                  placeholder="เช่น 09.00, 13.00, 19.00"
-                  className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg font-black text-slate-700 outline-none transition placeholder:text-slate-300 focus:ring-4 ${inputFocusClass}`}
-                />
-
-                <p className="mt-2 text-xs font-bold text-slate-400">
-                  ใช้เวลาแบบ 24 ชั่วโมง เช่น 09.00 = 9 โมงเช้า, 13.00 =
-                  บ่ายโมง, 19.00 = 1 ทุ่ม
+              <div className="overflow-hidden rounded-[24px] border border-slate-100 bg-slate-50 p-4">
+                <p className="mb-3 text-sm font-black text-slate-700">
+                  เลือกเวลา
                 </p>
 
-                {timePreview && (
-                  <div className="mt-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3">
-                    <p className="text-xs font-bold text-slate-400">
-                      เวลาที่เลือก
-                    </p>
-                    <p className="mt-1 text-base font-black text-emerald-600">
-                      {formattedCustomTime} น. ({timePreview})
-                    </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-black text-slate-400">
+                      ชั่วโมง
+                    </label>
+                    <select
+                      value={selectedHour}
+                      onChange={(e) => setSelectedHour(e.target.value)}
+                      className={`h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:ring-4 ${inputFocusClass}`}
+                    >
+                      {hourOptions.map((hour) => (
+                        <option key={hour} value={hour}>
+                          {hour}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                )}
 
-                {timeError && (
-                  <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-xs font-black text-red-500">
-                    {timeError}
+                  <div>
+                    <label className="mb-1 block text-[11px] font-black text-slate-400">
+                      นาที
+                    </label>
+                    <select
+                      value={selectedMinute}
+                      onChange={(e) => setSelectedMinute(e.target.value)}
+                      className={`h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:ring-4 ${inputFocusClass}`}
+                    >
+                      {minuteOptions.map((minute) => (
+                        <option key={minute} value={minute}>
+                          {minute}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-white px-4 py-3 text-center">
+                  <p className="text-xs font-bold text-slate-400">
+                    เวลาที่เลือก
                   </p>
-                )}
+                  <p
+                    className={`mt-1 text-base font-black ${
+                      picker.color === 'blue'
+                        ? 'text-blue-600'
+                        : 'text-emerald-600'
+                    }`}
+                  >
+                    {selectedTimeValue} น.
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-400">
+                    {timePreview}
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => {
-                  const formattedTime = formatTimeInput(customTime);
-
-                  if (!formattedTime) {
-                    setTimeError('กรุณากรอกเวลา');
-                    return;
-                  }
-
-                  if (!isValidTime(formattedTime)) {
-                    setTimeError(
-                      'กรุณากรอกเวลาให้ถูกต้อง เช่น 09.00, 13.00 หรือ 19.00'
-                    );
-                    return;
-                  }
-
-                  onSelect(formattedTime);
+                  onSelect(selectedTimeValue);
                   onClose();
                 }}
-                className={`h-12 w-full rounded-2xl text-sm font-black text-white shadow-lg transition ${buttonClass} ${
-                  !customTime ? 'cursor-not-allowed opacity-50' : ''
-                }`}
+                className={`h-12 w-full rounded-2xl text-sm font-black text-white shadow-lg transition ${buttonClass}`}
               >
                 ใช้เวลานี้
               </button>
@@ -625,7 +640,7 @@ export default function BookingPage() {
     const returnTimeFormatted = formatTimeInput(form.returnTime);
 
     if (!isValidTime(borrowTimeFormatted) || !isValidTime(returnTimeFormatted)) {
-      openWarningModal('กรุณากรอกเวลาให้ถูกต้อง เช่น 09.00, 13.00 หรือ 19.00');
+      openWarningModal('กรุณาเลือกเวลาให้ถูกต้อง');
       return;
     }
 
