@@ -26,6 +26,10 @@ import {
 const RETURN_PENDING_STATUSES = ['return_pending', 'return_requested'];
 
 type FilterMode = 'all' | 'borrow' | 'return' | 'urgent';
+type DateFieldFilter = 'created_at' | 'borrow_date' | 'return_date';
+type StatusFilter = 'all' | 'pending' | 'return_pending';
+type TypeFilter = 'all' | 'equipment' | 'computer';
+type UrgentFilter = 'all' | 'urgent' | 'normal';
 
 export default function ApprovalsPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -38,6 +42,17 @@ export default function ApprovalsPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
+
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [dateFieldFilter, setDateFieldFilter] =
+    useState<DateFieldFilter>('created_at');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [urgentFilter, setUrgentFilter] = useState<UrgentFilter>('all');
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -364,19 +379,101 @@ export default function ApprovalsPage() {
     return text.includes(keyword);
   };
 
+  const requestMatchesAdvancedFilter = (req: any) => {
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'pending' && req.status !== 'pending') return false;
+      if (
+        statusFilter === 'return_pending' &&
+        !RETURN_PENDING_STATUSES.includes(req.status)
+      ) {
+        return false;
+      }
+    }
+
+    if (typeFilter !== 'all' && req.request_type !== typeFilter) {
+      return false;
+    }
+
+    if (urgentFilter === 'urgent' && !req.urgent) {
+      return false;
+    }
+
+    if (urgentFilter === 'normal' && req.urgent) {
+      return false;
+    }
+
+    const rawDate = req?.[dateFieldFilter];
+
+    if (startDateFilter || endDateFilter || monthFilter || yearFilter) {
+      if (!rawDate) return false;
+
+      const dateValue = new Date(rawDate);
+
+      if (Number.isNaN(dateValue.getTime())) return false;
+
+      if (startDateFilter) {
+        const start = new Date(`${startDateFilter}T00:00:00`);
+        if (dateValue < start) return false;
+      }
+
+      if (endDateFilter) {
+        const end = new Date(`${endDateFilter}T23:59:59`);
+        if (dateValue > end) return false;
+      }
+
+      if (monthFilter) {
+        const month = dateValue.getMonth() + 1;
+        if (month !== Number(monthFilter)) return false;
+      }
+
+      if (yearFilter) {
+        const thaiYear = dateValue.getFullYear() + 543;
+        const christianYear = dateValue.getFullYear();
+        const inputYear = Number(yearFilter);
+
+        if (thaiYear !== inputYear && christianYear !== inputYear) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
   const filteredRequests = requests.filter((req) => {
     if (filterMode === 'return') return false;
     if (filterMode === 'urgent' && !req.urgent) return false;
 
-    return requestMatchesSearch(req);
+    return requestMatchesSearch(req) && requestMatchesAdvancedFilter(req);
   });
 
   const filteredReturnRequests = returnRequests.filter((req) => {
     if (filterMode === 'borrow') return false;
     if (filterMode === 'urgent' && !req.urgent) return false;
 
-    return requestMatchesSearch(req);
+    return requestMatchesSearch(req) && requestMatchesAdvancedFilter(req);
   });
+
+  const activeAdvancedFilterCount = [
+    startDateFilter,
+    endDateFilter,
+    monthFilter,
+    yearFilter,
+    statusFilter !== 'all' ? statusFilter : '',
+    typeFilter !== 'all' ? typeFilter : '',
+    urgentFilter !== 'all' ? urgentFilter : '',
+  ].filter(Boolean).length;
+
+  const resetAdvancedFilter = () => {
+    setDateFieldFilter('created_at');
+    setStartDateFilter('');
+    setEndDateFilter('');
+    setMonthFilter('');
+    setYearFilter('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setUrgentFilter('all');
+  };
 
   const addNotification = async (
     userEmail: string | null,
@@ -432,7 +529,8 @@ export default function ApprovalsPage() {
   };
 
   const getEmailDisplayName = async (req: any) => {
-    const rawName = typeof req?.user_name === 'string' ? req.user_name.trim() : '';
+    const rawName =
+      typeof req?.user_name === 'string' ? req.user_name.trim() : '';
 
     if (rawName && !rawName.includes('@')) {
       return rawName;
@@ -1039,10 +1137,20 @@ ${itemCodeLabel}: ${itemCode}
 
               <button
                 type="button"
-                className="ml-0 flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-500 transition hover:border-blue-200 hover:text-blue-600 xl:ml-4"
+                onClick={() => setShowAdvancedFilter(true)}
+                className={`relative ml-0 flex h-12 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-black transition xl:ml-4 ${
+                  activeAdvancedFilterCount > 0
+                    ? 'border-blue-200 bg-blue-50 text-blue-600 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-600'
+                }`}
               >
                 <Filter size={17} />
                 ตัวกรองเพิ่มเติม
+                {activeAdvancedFilterCount > 0 && (
+                  <span className="ml-1 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-black text-white">
+                    {activeAdvancedFilterCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -1114,6 +1222,173 @@ ${itemCodeLabel}: ${itemCode}
           <EmptyState text="ไม่มีคำขอด่วนในขณะนี้" />
         )}
       </div>
+
+      <Modal
+        isOpen={showAdvancedFilter}
+        onClose={() => setShowAdvancedFilter(false)}
+        title="ตัวกรองเพิ่มเติม"
+      >
+        <div className="space-y-5 pt-2 text-slate-800">
+          <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/60 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm">
+                <Filter size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  กรองรายการคำขอ
+                </h3>
+                <p className="mt-1 text-xs font-bold leading-relaxed text-slate-500">
+                  เลือกช่วงวันที่ เดือน ปี สถานะ ประเภท หรือคำขอด่วน เพื่อค้นหารายการที่ต้องการ
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                ใช้วันที่จาก
+              </label>
+              <select
+                value={dateFieldFilter}
+                onChange={(e) =>
+                  setDateFieldFilter(e.target.value as DateFieldFilter)
+                }
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              >
+                <option value="created_at">วันที่ส่งคำขอ</option>
+                <option value="borrow_date">วันที่เริ่มยืม</option>
+                <option value="return_date">วันที่กำหนดคืน</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                ปี
+              </label>
+              <input
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                placeholder="เช่น 2569 หรือ 2026"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                วันที่เริ่มต้น
+              </label>
+              <input
+                type="date"
+                value={startDateFilter}
+                onChange={(e) => setStartDateFilter(e.target.value)}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                วันที่สิ้นสุด
+              </label>
+              <input
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => setEndDateFilter(e.target.value)}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                เดือน
+              </label>
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              >
+                <option value="">ทุกเดือน</option>
+                <option value="1">มกราคม</option>
+                <option value="2">กุมภาพันธ์</option>
+                <option value="3">มีนาคม</option>
+                <option value="4">เมษายน</option>
+                <option value="5">พฤษภาคม</option>
+                <option value="6">มิถุนายน</option>
+                <option value="7">กรกฎาคม</option>
+                <option value="8">สิงหาคม</option>
+                <option value="9">กันยายน</option>
+                <option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option>
+                <option value="12">ธันวาคม</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                สถานะ
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="pending">รออนุมัติ</option>
+                <option value="return_pending">รอรับคืน</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                ประเภท
+              </label>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="equipment">อุปกรณ์</option>
+                <option value="computer">คอมพิวเตอร์</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-400">
+                ความเร่งด่วน
+              </label>
+              <select
+                value={urgentFilter}
+                onChange={(e) =>
+                  setUrgentFilter(e.target.value as UrgentFilter)
+                }
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="urgent">คำขอด่วน</option>
+                <option value="normal">คำขอปกติ</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              className="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-black !text-slate-600 hover:bg-slate-200"
+              onClick={resetAdvancedFilter}
+            >
+              ล้างตัวกรอง
+            </Button>
+
+            <Button
+              className="flex-[1.4] rounded-2xl bg-blue-600 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-700"
+              onClick={() => setShowAdvancedFilter(false)}
+            >
+              ใช้ตัวกรอง
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={isDetailModalOpen}
