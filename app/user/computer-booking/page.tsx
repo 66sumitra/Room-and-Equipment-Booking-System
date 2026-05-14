@@ -16,6 +16,18 @@ import {
   DoorOpen,
 } from 'lucide-react';
 
+function generateRequestNo() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const timePart = String(now.getTime()).slice(-5);
+  const randomPart = Math.floor(100 + Math.random() * 900);
+
+  return `BR-${year}${month}${day}-${timePart}${randomPart}`;
+}
+
 export default function UserComputerBooking() {
   const [computers, setComputers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,6 +210,8 @@ export default function UserComputerBooking() {
       return;
     }
 
+    const requestNo = generateRequestNo();
+
     const { data: insertedRequest, error } = await supabase
       .from('borrow_requests')
       .insert([
@@ -205,6 +219,7 @@ export default function UserComputerBooking() {
           request_type: 'computer',
           computer_id: selectedPc.id,
           equipment_id: null,
+          request_no: requestNo,
           user_name: currentUserEmail,
           user_email: currentUserEmail,
           reason: reason.trim(),
@@ -236,7 +251,7 @@ export default function UserComputerBooking() {
             title: 'มีคำขอใช้คอมพิวเตอร์ใหม่',
             message: `${currentUserEmail} ได้ส่งคำขอใช้งาน ${
               selectedPc.pc_name
-            } ห้อง ${getRoomName(selectedPc)}`,
+            } ห้อง ${getRoomName(selectedPc)} เลขคำขอ ${requestNo}`,
             type: 'new_request',
             related_request_id: insertedRequest.id,
           }))
@@ -251,7 +266,7 @@ export default function UserComputerBooking() {
           selectedPc.pc_name
         } ห้อง ${getRoomName(
           selectedPc
-        )} แล้ว กรุณารอแอดมินตรวจสอบ`,
+        )} แล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินตรวจสอบ`,
         type: 'request_submitted',
         related_request_id: insertedRequest.id,
       },
@@ -264,7 +279,7 @@ export default function UserComputerBooking() {
     showPopup(
       'success',
       'ส่งคำขอสำเร็จ',
-      'ระบบได้รับคำขอใช้งานคอมพิวเตอร์เรียบร้อยแล้ว กรุณารอแอดมินตรวจสอบ'
+      `ระบบได้รับคำขอใช้งานคอมพิวเตอร์เรียบร้อยแล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินตรวจสอบ`
     );
   };
 
