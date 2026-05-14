@@ -6,7 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 const GOOGLE_REDIRECT_URL =
-  "https://room-and-equipment-booking-system-j2o71jqqe.vercel.app/login";
+  "https://room-and-equipment-booking-system-j2o71jqqe.vercel.app/auth/callback";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
