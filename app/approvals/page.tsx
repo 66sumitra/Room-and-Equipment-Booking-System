@@ -91,8 +91,22 @@ export default function ApprovalsPage() {
         approved_at,
         returned_at,
         approved_by,
-        equipment ( id, name, category, available_stock, status ),
-        computers ( id, pc_name, room_name, status )
+        equipment (
+          id,
+          name,
+          category,
+          code,
+          equipment_code,
+          item_code,
+          available_stock,
+          status
+        ),
+        computers (
+          id,
+          pc_name,
+          room_name,
+          status
+        )
       `;
 
       const { data: pendingData, error: pendingError } = await supabase
@@ -192,6 +206,23 @@ export default function ApprovalsPage() {
     return req?.request_no || 'ยังไม่มีเลขคำขอ';
   };
 
+  const getItemCode = (req: any) => {
+    if (req?.request_type === 'computer') {
+      return req.computers?.pc_name || 'ไม่มีรหัสคอมพิวเตอร์';
+    }
+
+    return (
+      req?.equipment?.code ||
+      req?.equipment?.equipment_code ||
+      req?.equipment?.item_code ||
+      'ไม่มีรหัสอุปกรณ์'
+    );
+  };
+
+  const getItemCodeLabel = (req: any) => {
+    return req?.request_type === 'computer' ? 'รหัสคอมพิวเตอร์' : 'รหัสอุปกรณ์';
+  };
+
   const getAvailabilityText = (req: any) => {
     if (req?.request_type === 'computer') {
       return req.computers?.status === 'available' ? 'ว่าง' : 'ไม่ว่าง';
@@ -215,6 +246,12 @@ export default function ApprovalsPage() {
   const RequestNoBadge = ({ req }: { req: any }) => (
     <div className="mt-2 inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
       เลขคำขอยืม: {getRequestNo(req)}
+    </div>
+  );
+
+  const ItemCodeBadge = ({ req }: { req: any }) => (
+    <div className="mt-2 inline-flex w-fit rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-black text-indigo-700">
+      {getItemCodeLabel(req)}: {getItemCode(req)}
     </div>
   );
 
@@ -280,6 +317,8 @@ export default function ApprovalsPage() {
       } = await supabase.auth.getSession();
 
       const requestNo = getRequestNo(selected);
+      const itemCode = getItemCode(selected);
+      const itemCodeLabel = getItemCodeLabel(selected);
       const itemName = getRequestTitle(selected);
       const itemTypeText = getRequestTypeLabel(selected);
       const itemSubtitle = getRequestSubtitle(selected);
@@ -293,7 +332,7 @@ export default function ApprovalsPage() {
               } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo}`
             : `คำขอยืม ${
                 selected.equipment?.name || 'อุปกรณ์'
-              } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo}`;
+              } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo} รหัสอุปกรณ์ ${itemCode}`;
 
         if (selected.request_type === 'computer') {
           const { data: computerData, error: computerFetchError } =
@@ -389,6 +428,7 @@ export default function ApprovalsPage() {
 
 รายละเอียดคำขอ
 เลขคำขอยืม: ${requestNo}
+${itemCodeLabel}: ${itemCode}
 ประเภทคำขอ: ${itemTypeText}
 รายการ: ${itemName}
 รายละเอียด: ${itemSubtitle}
@@ -420,7 +460,7 @@ export default function ApprovalsPage() {
               } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} เนื่องจาก ${finalRejectReason}`
             : `คำขอยืม ${
                 selected.equipment?.name || 'อุปกรณ์'
-              } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} เนื่องจาก ${finalRejectReason}`;
+              } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} รหัสอุปกรณ์ ${itemCode} เนื่องจาก ${finalRejectReason}`;
 
         const { error: reqError } = await supabase
           .from('borrow_requests')
@@ -452,6 +492,7 @@ export default function ApprovalsPage() {
 
 รายละเอียดคำขอ
 เลขคำขอยืม: ${requestNo}
+${itemCodeLabel}: ${itemCode}
 ประเภทคำขอ: ${itemTypeText}
 รายการ: ${itemName}
 รายละเอียด: ${itemSubtitle}
@@ -477,7 +518,7 @@ export default function ApprovalsPage() {
               } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo}`
             : `แอดมินยืนยันรับคืน ${
                 selected.equipment?.name || 'อุปกรณ์'
-              } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo}`;
+              } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo} รหัสอุปกรณ์ ${itemCode}`;
 
         const { error: reqError } = await supabase
           .from('borrow_requests')
@@ -536,6 +577,7 @@ export default function ApprovalsPage() {
 
 รายละเอียดการคืน
 เลขคำขอยืม: ${requestNo}
+${itemCodeLabel}: ${itemCode}
 ประเภทคำขอ: ${itemTypeText}
 รายการ: ${itemName}
 รายละเอียด: ${itemSubtitle}
@@ -643,7 +685,10 @@ export default function ApprovalsPage() {
                       )}
                     </div>
 
-                    <RequestNoBadge req={req} />
+                    <div className="flex flex-wrap gap-2">
+                      <RequestNoBadge req={req} />
+                      <ItemCodeBadge req={req} />
+                    </div>
 
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-tighter text-slate-400">
                       {getRequestSubtitle(req)}
@@ -766,7 +811,10 @@ export default function ApprovalsPage() {
                       </span>
                     </div>
 
-                    <RequestNoBadge req={req} />
+                    <div className="flex flex-wrap gap-2">
+                      <RequestNoBadge req={req} />
+                      <ItemCodeBadge req={req} />
+                    </div>
 
                     <p className="mt-1 text-[12px] font-bold uppercase tracking-tighter text-slate-400">
                       {getRequestSubtitle(req)}
@@ -878,7 +926,10 @@ export default function ApprovalsPage() {
                     {getRequestSubtitle(selected)}
                   </p>
 
-                  <RequestNoBadge req={selected} />
+                  <div className="flex flex-wrap gap-2">
+                    <RequestNoBadge req={selected} />
+                    <ItemCodeBadge req={selected} />
+                  </div>
                 </div>
               </div>
 
@@ -889,6 +940,15 @@ export default function ApprovalsPage() {
                   </p>
                   <p className="text-sm font-bold text-blue-700">
                     {getRequestNo(selected)}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                    {getItemCodeLabel(selected)}
+                  </p>
+                  <p className="text-sm font-bold text-indigo-700">
+                    {getItemCode(selected)}
                   </p>
                 </div>
 
@@ -1015,8 +1075,13 @@ export default function ApprovalsPage() {
           </div>
 
           {selected && (
-            <div className="mb-3 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
-              เลขคำขอยืม: {getRequestNo(selected)}
+            <div className="mb-3 flex flex-wrap justify-center gap-2">
+              <div className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
+                เลขคำขอยืม: {getRequestNo(selected)}
+              </div>
+              <div className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-black text-indigo-700">
+                {getItemCodeLabel(selected)}: {getItemCode(selected)}
+              </div>
             </div>
           )}
 
