@@ -13,9 +13,19 @@ import {
   RotateCcw,
   Monitor,
   Package,
+  Search,
+  Filter,
+  Eye,
+  CalendarDays,
+  X,
+  Grid2X2,
+  ArrowDownToLine,
+  ArrowUpToLine,
 } from 'lucide-react';
 
 const RETURN_PENDING_STATUSES = ['return_pending', 'return_requested'];
+
+type FilterMode = 'all' | 'borrow' | 'return' | 'urgent';
 
 export default function ApprovalsPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -25,6 +35,9 @@ export default function ApprovalsPage() {
 
   const [allowed, setAllowed] = useState(false);
   const [checking, setChecking] = useState(true);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -311,17 +324,59 @@ export default function ApprovalsPage() {
     });
   };
 
-  const RequestNoBadge = ({ req }: { req: any }) => (
-    <div className="mt-2 inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
-      เลขคำขอยืม: {getRequestNo(req)}
-    </div>
-  );
+  const shortDate = (dateTime: string | null | undefined) => {
+    if (!dateTime) return 'ไม่ระบุ';
 
-  const ItemCodeBadge = ({ req }: { req: any }) => (
-    <div className="mt-2 inline-flex w-fit rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-black text-indigo-700">
-      {getItemCodeLabel(req)}: {getItemCode(req)}
-    </div>
-  );
+    return new Date(dateTime).toLocaleString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const shortTime = (dateTime: string | null | undefined) => {
+    if (!dateTime) return '';
+
+    return new Date(dateTime).toLocaleString('th-TH', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const requestMatchesSearch = (req: any) => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    if (!keyword) return true;
+
+    const text = [
+      getRequestTitle(req),
+      getRequestSubtitle(req),
+      getRequestNo(req),
+      getItemCode(req),
+      req.user_name,
+      req.user_email,
+      req.reason,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return text.includes(keyword);
+  };
+
+  const filteredRequests = requests.filter((req) => {
+    if (filterMode === 'return') return false;
+    if (filterMode === 'urgent' && !req.urgent) return false;
+
+    return requestMatchesSearch(req);
+  });
+
+  const filteredReturnRequests = returnRequests.filter((req) => {
+    if (filterMode === 'borrow') return false;
+    if (filterMode === 'urgent' && !req.urgent) return false;
+
+    return requestMatchesSearch(req);
+  });
 
   const addNotification = async (
     userEmail: string | null,
@@ -659,6 +714,247 @@ ${itemCodeLabel}: ${itemCode}
     }
   };
 
+  const FilterButton = ({
+    mode,
+    icon,
+    label,
+  }: {
+    mode: FilterMode;
+    icon: React.ReactNode;
+    label: string;
+  }) => (
+    <button
+      type="button"
+      onClick={() => setFilterMode(mode)}
+      className={`flex h-12 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-black transition-all ${
+        filterMode === mode
+          ? 'border-blue-100 bg-blue-50 text-blue-600 shadow-sm'
+          : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-600'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+
+  const RequestNoBadge = ({ req }: { req: any }) => (
+    <div className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
+      เลขคำขอ: {getRequestNo(req)}
+    </div>
+  );
+
+  const ItemCodeBadge = ({ req }: { req: any }) => (
+    <div className="inline-flex w-fit rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-700">
+      {getItemCodeLabel(req)}: {getItemCode(req)}
+    </div>
+  );
+
+  const EmptyState = ({ text }: { text: string }) => (
+    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50/60 p-14 text-center">
+      <CheckCircle2 size={36} className="mx-auto mb-3 text-slate-300" />
+      <p className="text-sm font-black italic text-slate-400">{text}</p>
+    </div>
+  );
+
+  const PendingRequestCard = ({ req }: { req: any }) => (
+    <div className="group rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl md:p-6">
+      <div className="grid gap-5 lg:grid-cols-[1fr_260px_300px] lg:items-center">
+        <div className="flex min-w-0 gap-4">
+          <div
+            className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl ${
+              req.request_type === 'computer'
+                ? 'bg-blue-50 text-blue-600'
+                : 'bg-indigo-50 text-indigo-600'
+            }`}
+          >
+            {req.request_type === 'computer' ? (
+              <Monitor size={30} />
+            ) : (
+              <Package size={30} />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="break-words text-base font-black leading-snug text-slate-900 md:text-lg">
+                {getRequestTitle(req)}
+              </h3>
+
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500">
+                {req.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+              </span>
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <RequestNoBadge req={req} />
+              <ItemCodeBadge req={req} />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <User size={14} className="text-slate-300" />
+                {req.user_name || req.user_email || 'ไม่ทราบชื่อผู้ใช้'}
+              </span>
+
+              <span className="flex items-center gap-1.5">
+                <Clock size={14} className="text-slate-300" />
+                {formatThaiDateTime(req.created_at)}
+              </span>
+            </div>
+
+            <p className="mt-3 line-clamp-2 text-sm font-bold leading-relaxed text-slate-500">
+              เหตุผล: {req.reason || 'ไม่ได้ระบุเหตุผล'}
+            </p>
+
+            <p className="mt-2 text-xs font-bold text-slate-300">
+              {getRequestSubtitle(req)} · {getAvailabilityText(req)}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-100 bg-slate-50/60 p-4 lg:border-l lg:border-y-0 lg:border-r-0 lg:bg-transparent">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <CalendarDays size={18} className="mt-0.5 text-slate-400" />
+              <div>
+                <p className="text-xs font-black text-slate-400">วันที่ยืม</p>
+                <p className="text-sm font-black text-slate-700">
+                  {shortDate(req.borrow_date)} {shortTime(req.borrow_date)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Clock size={18} className="mt-0.5 text-slate-400" />
+              <div>
+                <p className="text-xs font-black text-slate-400">กำหนดคืน</p>
+                <p className="text-sm font-black text-slate-700">
+                  {shortDate(req.return_date)} {shortTime(req.return_date)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 lg:items-end">
+          {req.urgent && (
+            <span className="inline-flex w-fit rounded-full bg-red-50 px-5 py-2 text-sm font-black text-red-600">
+              ด่วน
+            </span>
+          )}
+
+          <div className="grid w-full grid-cols-3 gap-2 lg:max-w-[300px]">
+            <Button
+              className="h-12 rounded-2xl bg-slate-100 px-3 text-xs font-black !text-slate-600 hover:bg-slate-200"
+              onClick={() => {
+                setSelected(req);
+                setIsDetailModalOpen(true);
+              }}
+            >
+              <Eye size={16} className="mr-1" />
+              รายละเอียด
+            </Button>
+
+            <Button
+              className="h-12 rounded-2xl bg-emerald-500 px-3 text-xs font-black text-white shadow-lg shadow-emerald-100 hover:bg-emerald-600"
+              onClick={() => openConfirm(req, 'approve')}
+            >
+              <CheckCircle2 size={16} className="mr-1" />
+              อนุมัติ
+            </Button>
+
+            <Button
+              className="h-12 rounded-2xl bg-red-500 px-3 text-xs font-black text-white shadow-lg shadow-red-100 hover:bg-red-600"
+              onClick={() => openConfirm(req, 'reject')}
+            >
+              <X size={16} className="mr-1" />
+              ปฏิเสธ
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ReturnRequestCard = ({ req }: { req: any }) => (
+    <div className="rounded-[2rem] border border-amber-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl md:p-6">
+      <div className="grid gap-5 lg:grid-cols-[1fr_260px_180px] lg:items-center">
+        <div className="flex min-w-0 gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-amber-50 text-amber-600">
+            <RotateCcw size={30} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="break-words text-base font-black leading-snug text-slate-900 md:text-lg">
+                {getRequestTitle(req)}
+              </h3>
+
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500">
+                {req.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+              </span>
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <div className="inline-flex w-fit rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-700">
+                เลขคำขอคืน: {getRequestNo(req)}
+              </div>
+              <ItemCodeBadge req={req} />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <User size={14} className="text-slate-300" />
+                {req.user_name || req.user_email || 'ไม่ทราบชื่อผู้ใช้'}
+              </span>
+
+              <span className="flex items-center gap-1.5">
+                <Clock size={14} className="text-slate-300" />
+                {formatThaiDateTime(req.created_at)}
+              </span>
+            </div>
+
+            <p className="mt-3 line-clamp-2 text-sm font-bold leading-relaxed text-slate-500">
+              หมายเหตุ: {req.reason || 'ผู้ใช้แจ้งคืนอุปกรณ์แล้ว'}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-amber-100 bg-amber-50/40 p-4 lg:border-l lg:border-y-0 lg:border-r-0 lg:bg-transparent">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <CalendarDays size={18} className="mt-0.5 text-slate-400" />
+              <div>
+                <p className="text-xs font-black text-slate-400">วันที่ยืม</p>
+                <p className="text-sm font-black text-slate-700">
+                  {shortDate(req.borrow_date)} {shortTime(req.borrow_date)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Clock size={18} className="mt-0.5 text-slate-400" />
+              <div>
+                <p className="text-xs font-black text-slate-400">กำหนดคืน</p>
+                <p className="text-sm font-black text-slate-700">
+                  {shortDate(req.return_date)} {shortTime(req.return_date)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          className="h-12 rounded-2xl bg-amber-100 px-5 text-sm font-black !text-amber-700 shadow-sm hover:bg-amber-200"
+          onClick={() => openConfirm(req, 'confirm_return')}
+        >
+          <CheckCircle2 size={17} className="mr-2" />
+          ยืนยันรับคืน
+        </Button>
+      </div>
+    </div>
+  );
+
   if (checking) {
     return (
       <DashboardLayout title="รายการอนุมัติการใช้อุปกรณ์">
@@ -671,259 +967,131 @@ ${itemCodeLabel}: ${itemCode}
 
   return (
     <DashboardLayout title="รายการอนุมัติการใช้อุปกรณ์">
-      <div className="space-y-10 pb-20">
-        <div className="flex items-center justify-between rounded-[2rem] border border-slate-50 bg-white p-6 shadow-xl shadow-slate-100/50">
+      <div className="space-y-8 pb-20">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <h2 className="text-xl font-black italic text-slate-800">
-              Pending Requests
-            </h2>
-            <div className="mt-1 flex items-center gap-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                มีรายการรออนุมัติ {requests.length} รายการ
-              </p>
-              {requests.filter((r) => r.urgent).length > 0 && (
-                <span className="animate-pulse rounded-lg border border-red-100 bg-red-50 px-2 py-0.5 text-[9px] font-black text-red-500">
-                  ด่วน {requests.filter((r) => r.urgent).length} รายการ
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-            <Clock size={24} />
-          </div>
-        </div>
-
-        <div className="overflow-x-auto rounded-[2.5rem] border border-slate-100 bg-white text-black shadow-xl shadow-slate-100/50">
-          <table className="w-full min-w-[900px] border-collapse">
-            <thead className="bg-slate-800 text-[11px] font-black uppercase tracking-[0.2em] text-white">
-              <tr>
-                <th className="px-10 py-5 text-left">รายละเอียดคำขอ</th>
-                <th className="py-5 text-left">ข้อมูลผู้ขอ</th>
-                <th className="px-10 py-5 text-center">จัดการคำขอ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {requests.map((req) => (
-                <tr
-                  key={req.id}
-                  className={`group transition-colors ${
-                    req.urgent
-                      ? 'bg-red-50/40 hover:bg-red-50/60'
-                      : 'hover:bg-slate-50/50'
-                  }`}
-                >
-                  <td className="relative px-8 py-6">
-                    {req.urgent && (
-                      <div className="absolute bottom-0 left-0 top-0 w-1 animate-pulse bg-red-500" />
-                    )}
-
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-black text-slate-800">
-                        {getRequestTitle(req)}
-                      </p>
-
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[8px] font-black ${
-                          req.request_type === 'computer'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {req.request_type === 'computer'
-                          ? 'COMPUTER'
-                          : 'EQUIPMENT'}
-                      </span>
-
-                      {req.urgent && (
-                        <span className="flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[8px] font-black text-white shadow-lg shadow-red-200">
-                          🚨 URGENT
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <RequestNoBadge req={req} />
-                      <ItemCodeBadge req={req} />
-                    </div>
-
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-tighter text-slate-400">
-                      {getRequestSubtitle(req)}
-                    </p>
-
-                    <p className="mt-1 text-[10px] font-bold text-slate-300">
-                      {req.request_type === 'computer'
-                        ? `สถานะ: ${getAvailabilityText(req)}`
-                        : getAvailabilityText(req)}
-                    </p>
-                  </td>
-
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-xs text-slate-700">
-                        <User size={12} className="text-slate-300" />
-                        {req.user_name || req.user_email || 'ไม่ทราบชื่อผู้ใช้'}
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                        <Clock size={12} className="text-slate-200" />
-                        {formatThaiDateTime(req.borrow_date)}
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-400">
-                        ประเภท: {getRequestTypeLabel(req)}
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-8 py-6">
-                    <div className="flex justify-center gap-2">
-                      <Button
-                        className="h-9 rounded-xl bg-slate-100 px-4 text-[10px] font-black uppercase !text-slate-500"
-                        onClick={() => {
-                          setSelected(req);
-                          setIsDetailModalOpen(true);
-                        }}
-                      >
-                        รายละเอียด
-                      </Button>
-                      <Button
-                        className="h-9 rounded-xl bg-emerald-500 px-5 text-[10px] font-black uppercase text-white shadow-lg shadow-emerald-100"
-                        onClick={() => openConfirm(req, 'approve')}
-                      >
-                        อนุมัติ
-                      </Button>
-                      <Button
-                        className="h-9 rounded-xl bg-red-500 px-5 text-[10px] font-black uppercase text-white shadow-lg shadow-red-100"
-                        onClick={() => openConfirm(req, 'reject')}
-                      >
-                        ปฏิเสธ
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {!loading && requests.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={3}
-                    className="py-20 text-center font-black italic text-slate-400"
-                  >
-                    <CheckCircle2
-                      className="mx-auto mb-2 text-slate-200"
-                      size={40}
-                    />
-                    ไม่มีรายการรออนุมัติแล้ว
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex items-center justify-between rounded-[2rem] border border-slate-50 bg-white p-6 shadow-xl shadow-slate-100/50">
-          <div>
-            <h2 className="text-xl font-black italic text-slate-800">
-              Return Requests
-            </h2>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
-              มีรายการรอรับคืน {returnRequests.length} รายการ
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+              รายการอนุมัติการใช้อุปกรณ์
+            </h1>
+            <p className="mt-2 text-sm font-bold text-slate-400">
+              ตรวจสอบและอนุมัติคำขอยืม - คืนอุปกรณ์
             </p>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-            <RotateCcw size={24} />
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-4 shadow-xl shadow-slate-100/60 md:p-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="relative w-full xl:max-w-md">
+              <Search
+                size={20}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="ค้นหาชื่อผู้ขอ / อุปกรณ์ / เลขคำขอ"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <FilterButton
+                mode="all"
+                icon={<Grid2X2 size={17} />}
+                label="ทั้งหมด"
+              />
+              <FilterButton
+                mode="borrow"
+                icon={<ArrowDownToLine size={17} />}
+                label="คำขอยืม"
+              />
+              <FilterButton
+                mode="return"
+                icon={<ArrowUpToLine size={17} />}
+                label="คำขอคืน"
+              />
+              <FilterButton
+                mode="urgent"
+                icon={<AlertCircle size={17} />}
+                label="ด่วน"
+              />
+
+              <button
+                type="button"
+                className="ml-0 flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-500 transition hover:border-blue-200 hover:text-blue-600 xl:ml-4"
+              >
+                <Filter size={17} />
+                ตัวกรองเพิ่มเติม
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-[2.5rem] border border-slate-100 bg-white text-black shadow-xl shadow-slate-100/50">
-          <table className="w-full min-w-[900px] border-collapse">
-            <thead className="bg-amber-500 text-[12px] font-black uppercase tracking-[0.2em] text-white">
-              <tr>
-                <th className="px-10 py-5 text-left">รายละเอียดคำขอ</th>
-                <th className="px-10 py-5 text-left">ผู้แจ้งคืน</th>
-                <th className="px-10 py-5 text-center">สถานะ</th>
-                <th className="px-10 py-5 text-center">ยืนยันรับคืน</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {returnRequests.map((req) => (
-                <tr
-                  key={req.id}
-                  className="transition-colors hover:bg-amber-50/30"
-                >
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-black text-slate-800">
-                        {getRequestTitle(req)}
-                      </p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-black ${
-                          req.request_type === 'computer'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {req.request_type === 'computer'
-                          ? 'COMPUTER'
-                          : 'EQUIPMENT'}
-                      </span>
-                    </div>
+        {(filterMode === 'all' ||
+          filterMode === 'borrow' ||
+          filterMode === 'urgent') && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="h-3 w-3 rounded-full bg-blue-600"></span>
+              <h2 className="text-xl font-black text-slate-900">
+                คำขอรออนุมัติ
+              </h2>
+              <span className="text-sm font-black text-slate-400">
+                Pending Requests
+              </span>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-600">
+                {filteredRequests.length} รายการ
+              </span>
+            </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <RequestNoBadge req={req} />
-                      <ItemCodeBadge req={req} />
-                    </div>
+            {loading ? (
+              <div className="rounded-[2rem] bg-white p-14 text-center font-bold text-slate-400 shadow-sm">
+                กำลังโหลดข้อมูล...
+              </div>
+            ) : filteredRequests.length > 0 ? (
+              <div className="space-y-4">
+                {filteredRequests.map((req) => (
+                  <PendingRequestCard key={req.id} req={req} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="ไม่มีรายการรออนุมัติแล้ว" />
+            )}
+          </section>
+        )}
 
-                    <p className="mt-1 text-[12px] font-bold uppercase tracking-tighter text-slate-400">
-                      {getRequestSubtitle(req)}
-                    </p>
-                  </td>
+        {(filterMode === 'all' || filterMode === 'return') && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="h-3 w-3 rounded-full bg-amber-500"></span>
+              <h2 className="text-xl font-black text-slate-900">คำขอรับคืน</h2>
+              <span className="text-sm font-black text-slate-400">
+                Return Requests
+              </span>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-600">
+                {filteredReturnRequests.length} รายการ
+              </span>
+            </div>
 
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-xs text-slate-700">
-                        <User size={12} className="text-slate-300" />
-                        {req.user_name || req.user_email || 'ไม่ทราบชื่อผู้ใช้'}
-                      </div>
-                      <div className="flex items-center gap-2 text-[12px] text-slate-400">
-                        <Clock size={12} className="text-slate-200" />
-                        {formatThaiDateTime(req.return_date)}
-                      </div>
-                    </div>
-                  </td>
+            {loading ? (
+              <div className="rounded-[2rem] bg-white p-14 text-center font-bold text-slate-400 shadow-sm">
+                กำลังโหลดข้อมูล...
+              </div>
+            ) : filteredReturnRequests.length > 0 ? (
+              <div className="space-y-4">
+                {filteredReturnRequests.map((req) => (
+                  <ReturnRequestCard key={req.id} req={req} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="ไม่มีรายการรอรับคืน" />
+            )}
+          </section>
+        )}
 
-                  <td className="px-8 py-6 text-center">
-                    <span className="rounded-full border border-amber-100 bg-amber-50 px-4 py-1 text-[10px] font-black text-amber-600">
-                      รอรับคืน
-                    </span>
-                  </td>
-
-                  <td className="px-8 py-6 text-center">
-                    <Button
-                      className="h-10 rounded-xl bg-amber-500 px-5 text-[13px] font-black uppercase text-white shadow-lg shadow-amber-100"
-                      onClick={() => openConfirm(req, 'confirm_return')}
-                    >
-                      ยืนยันรับคืน
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-
-              {!loading && returnRequests.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="py-20 text-center font-black italic text-slate-400"
-                  >
-                    <RotateCcw
-                      className="mx-auto mb-2 text-slate-200"
-                      size={40}
-                    />
-                    ไม่มีรายการรอรับคืน
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {filterMode === 'urgent' && filteredRequests.length === 0 && (
+          <EmptyState text="ไม่มีคำขอด่วนในขณะนี้" />
+        )}
       </div>
 
       <Modal
@@ -982,7 +1150,7 @@ ${itemCodeLabel}: ${itemCode}
                     {getRequestSubtitle(selected)}
                   </p>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <RequestNoBadge req={selected} />
                     <ItemCodeBadge req={selected} />
                   </div>
@@ -1013,9 +1181,7 @@ ${itemCodeLabel}: ${itemCode}
                     ประเภทคำขอ
                   </p>
                   <p className="text-sm font-bold text-slate-800">
-                    {selected.request_type === 'computer'
-                      ? 'คอมพิวเตอร์'
-                      : 'อุปกรณ์'}
+                    {getRequestTypeLabel(selected)}
                   </p>
                 </div>
 
