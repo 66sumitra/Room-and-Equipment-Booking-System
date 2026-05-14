@@ -461,18 +461,19 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      success: true,
-      message: 'check return reminders success',
-      totalApprovedRequests: requests?.length || 0,
-      returnReminderCount,
-      overdueCount,
-      emailSentCount,
-      emailFailedCount,
-      adminEmailSentCount,
-      adminEmailFailedCount,
-      emailErrors,
-      adminEmailErrors,
-    });
+        success: true,
+  message: 'check return reminders success',
+  totalApprovedRequests: requests?.length || 0,
+  returnReminderCount,
+  overdueCount,
+  emailSentCount,
+  emailFailedCount,
+  adminEmailSentCount,
+  adminEmailFailedCount,
+  emailErrors,
+  adminEmailErrors,
+});
+    
   } catch (error) {
     const err = error as Error;
 
