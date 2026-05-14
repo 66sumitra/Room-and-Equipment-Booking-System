@@ -200,7 +200,7 @@ export default function MyBookingsPage() {
       if (equipmentIds.length > 0) {
         const { data: equipmentData, error: equipmentError } = await supabase
           .from('equipment')
-          .select('id, name, category')
+          .select('id, name, category, code, equipment_code, item_code')
           .in('id', equipmentIds);
 
         if (equipmentError) throw equipmentError;
@@ -278,6 +278,19 @@ export default function MyBookingsPage() {
     return item?.request_no || 'ยังไม่มีเลขคำขอ';
   };
 
+  const getEquipmentCode = (item: any) => {
+    if (item?.request_type === 'computer') {
+      return item.computers?.pc_name || 'ไม่มีรหัสคอมพิวเตอร์';
+    }
+
+    return (
+      item?.equipment?.code ||
+      item?.equipment?.equipment_code ||
+      item?.equipment?.item_code ||
+      'ไม่มีรหัสอุปกรณ์'
+    );
+  };
+
   const handleRequestReturn = async (item: any) => {
     try {
       const { error } = await supabase
@@ -291,6 +304,7 @@ export default function MyBookingsPage() {
       const itemTypeText = getRequestTypeText(item);
       const itemSubtitle = getRequestSubtitle(item);
       const requestNo = getRequestNo(item);
+      const equipmentCode = getEquipmentCode(item);
       const userEmail = item.user_email || currentUserEmail;
 
       const { data: admins, error: adminError } = await supabase
@@ -307,7 +321,7 @@ export default function MyBookingsPage() {
           adminEmails.map((adminEmail) => ({
             user_email: adminEmail,
             title: 'มีคำขอคืนใหม่',
-            message: `${userEmail} ได้ส่งคำขอคืน ${itemName} เลขคำขอ ${requestNo}`,
+            message: `${userEmail} ได้ส่งคำขอคืน ${itemName} รหัส ${equipmentCode} เลขคำขอ ${requestNo}`,
             type: 'return_requested',
             related_request_id: item.id,
           }))
@@ -322,6 +336,7 @@ export default function MyBookingsPage() {
 
 รายละเอียดคำขอคืน
 เลขคำขอยืม: ${requestNo}
+รหัสรายการ: ${equipmentCode}
 รายการที่ขอคืน: ${itemName}
 ประเภท: ${itemTypeText}
 รายละเอียด: ${itemSubtitle}
@@ -338,7 +353,7 @@ export default function MyBookingsPage() {
           {
             user_email: userEmail,
             title: 'ส่งคำขอคืนสำเร็จ',
-            message: `คุณได้ส่งคำขอคืน ${itemName} เลขคำขอ ${requestNo} แล้ว กรุณารอแอดมินยืนยันรับคืน`,
+            message: `คุณได้ส่งคำขอคืน ${itemName} รหัส ${equipmentCode} เลขคำขอ ${requestNo} แล้ว กรุณารอแอดมินยืนยันรับคืน`,
             type: 'return_requested',
             related_request_id: item.id,
           },
@@ -350,7 +365,7 @@ export default function MyBookingsPage() {
         'แจ้งคืนสำเร็จ',
         item.request_type === 'computer'
           ? `แจ้งคืนคอมพิวเตอร์เรียบร้อยแล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
-          : `แจ้งคืนอุปกรณ์เรียบร้อยแล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
+          : `แจ้งคืนอุปกรณ์เรียบร้อยแล้ว รหัสอุปกรณ์ ${equipmentCode} เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
       );
 
       fetchBookings(currentUserEmail);
@@ -376,6 +391,13 @@ export default function MyBookingsPage() {
   const RequestNoBadge = ({ item }: { item: any }) => (
     <div className="mt-2 inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
       เลขคำขอยืม: {getRequestNo(item)}
+    </div>
+  );
+
+  const EquipmentCodeBadge = ({ item }: { item: any }) => (
+    <div className="mt-2 inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-700">
+      {item?.request_type === 'computer' ? 'รหัสคอมพิวเตอร์' : 'รหัสอุปกรณ์'}:{' '}
+      {getEquipmentCode(item)}
     </div>
   );
 
@@ -440,7 +462,10 @@ export default function MyBookingsPage() {
                       </span>
                     </div>
 
-                    <RequestNoBadge item={item} />
+                    <div className="flex flex-wrap gap-2">
+                      <RequestNoBadge item={item} />
+                      <EquipmentCodeBadge item={item} />
+                    </div>
 
                     <p className="mt-2 text-[13px] font-bold uppercase tracking-widest text-slate-400">
                       {getRequestSubtitle(item)}
@@ -520,7 +545,10 @@ export default function MyBookingsPage() {
                       </span>
                     </div>
 
-                    <RequestNoBadge item={item} />
+                    <div className="flex flex-wrap gap-2">
+                      <RequestNoBadge item={item} />
+                      <EquipmentCodeBadge item={item} />
+                    </div>
 
                     <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       {getRequestSubtitle(item)}
@@ -584,7 +612,10 @@ export default function MyBookingsPage() {
                       </span>
                     </div>
 
-                    <RequestNoBadge item={item} />
+                    <div className="flex flex-wrap gap-2">
+                      <RequestNoBadge item={item} />
+                      <EquipmentCodeBadge item={item} />
+                    </div>
 
                     <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       {getRequestSubtitle(item)}
