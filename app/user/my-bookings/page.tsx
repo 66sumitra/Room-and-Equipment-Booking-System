@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
@@ -12,7 +12,12 @@ import {
   Package,
   Monitor,
   AlertCircle,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react';
+
+type StatusFilter = 'all' | 'approved' | 'return_pending' | 'returned';
+type TypeFilter = 'all' | 'equipment' | 'computer';
 
 export default function MyBookingsPage() {
   const [approvedBookings, setApprovedBookings] = useState<any[]>([]);
@@ -20,6 +25,10 @@ export default function MyBookingsPage() {
   const [returnedBookings, setReturnedBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   const [popup, setPopup] = useState<{
     open: boolean;
@@ -291,6 +300,52 @@ export default function MyBookingsPage() {
     );
   };
 
+  const allBookings = useMemo(() => {
+    return [...approvedBookings, ...returnPendingBookings, ...returnedBookings];
+  }, [approvedBookings, returnPendingBookings, returnedBookings]);
+
+  const filteredBookings = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    return allBookings.filter((item) => {
+      const title = getRequestTitle(item).toLowerCase();
+      const subtitle = getRequestSubtitle(item).toLowerCase();
+      const requestNo = getRequestNo(item).toLowerCase();
+      const code = getEquipmentCode(item).toLowerCase();
+      const reason = (item.reason || '').toLowerCase();
+
+      const matchesSearch =
+        !keyword ||
+        title.includes(keyword) ||
+        subtitle.includes(keyword) ||
+        requestNo.includes(keyword) ||
+        code.includes(keyword) ||
+        reason.includes(keyword);
+
+      const matchesStatus =
+        statusFilter === 'all' || item.status === statusFilter;
+
+      const matchesType =
+        typeFilter === 'all' || item.request_type === typeFilter;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [allBookings, searchTerm, statusFilter, typeFilter]);
+
+  const filteredApprovedBookings = filteredBookings.filter(
+    (item) => item.status === 'approved'
+  );
+
+  const filteredReturnPendingBookings = filteredBookings.filter(
+    (item) => item.status === 'return_pending'
+  );
+
+  const filteredReturnedBookings = filteredBookings.filter(
+    (item) => item.status === 'returned'
+  );
+
+  const hasAnyFilteredResult = filteredBookings.length > 0;
+
   const handleRequestReturn = async (item: any) => {
     try {
       const { error } = await supabase
@@ -389,15 +444,126 @@ export default function MyBookingsPage() {
   };
 
   const RequestNoBadge = ({ item }: { item: any }) => (
-    <div className="mt-2 inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
+    <div className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
       เลขคำขอยืม: {getRequestNo(item)}
     </div>
   );
 
   const EquipmentCodeBadge = ({ item }: { item: any }) => (
-    <div className="mt-2 inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-700">
+    <div className="inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-700">
       {item?.request_type === 'computer' ? 'รหัสคอมพิวเตอร์' : 'รหัสอุปกรณ์'}:{' '}
       {getEquipmentCode(item)}
+    </div>
+  );
+
+  const FilterButton = ({
+    active,
+    children,
+    onClick,
+  }: {
+    active: boolean;
+    children: React.ReactNode;
+    onClick: () => void;
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-10 shrink-0 rounded-2xl border px-4 text-[12px] font-black transition-all ${
+        active
+          ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-200'
+          : 'border-slate-100 bg-white text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600'
+      }`}
+    >
+      {children}
+    </button>
+  );
+
+  const BookingCard = ({ item, mode }: { item: any; mode: string }) => (
+    <div
+      className={`flex flex-col gap-4 rounded-[2rem] border bg-white p-5 shadow-sm md:p-6 lg:flex-row lg:items-center lg:justify-between ${
+        mode === 'approved'
+          ? 'border-slate-100'
+          : mode === 'return_pending'
+          ? 'border-amber-100'
+          : 'border-emerald-100'
+      }`}
+    >
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+        <div
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${
+            item.request_type === 'computer'
+              ? 'bg-blue-50 text-blue-600'
+              : 'bg-indigo-50 text-indigo-600'
+          }`}
+        >
+          {getRequestIcon(item)}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="break-words text-sm font-black text-slate-800 md:text-base">
+              {getRequestTitle(item)}
+            </p>
+
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                item.request_type === 'computer'
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+            </span>
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            <RequestNoBadge item={item} />
+            <EquipmentCodeBadge item={item} />
+          </div>
+
+          <p className="mt-3 text-[12px] font-bold uppercase tracking-widest text-slate-400">
+            {getRequestSubtitle(item)}
+          </p>
+
+          <div className="mt-2 grid gap-1 text-[13px] font-bold text-slate-500 sm:grid-cols-2">
+            <p>วันที่ยืม: {formatThaiDateTime(item.borrow_date)}</p>
+            <p>กำหนดคืน: {formatThaiDateTime(item.return_date)}</p>
+          </div>
+
+          {mode === 'returned' && (
+            <p className="mt-1 text-[12px] font-bold text-emerald-600">
+              วันที่คืนสำเร็จ: {formatThaiDateTime(item.returned_at)}
+            </p>
+          )}
+
+          {item.reason && (
+            <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-slate-400">
+              เหตุผล: {item.reason}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {mode === 'approved' && (
+        <Button
+          className="w-full rounded-xl bg-red-500 px-5 py-3 text-sm font-black uppercase text-white shadow-lg shadow-red-100 lg:w-auto"
+          onClick={() => handleRequestReturn(item)}
+        >
+          {getRequestButtonText(item)}
+        </Button>
+      )}
+
+      {mode === 'return_pending' && (
+        <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black text-amber-700">
+          รอรับคืน
+        </span>
+      )}
+
+      {mode === 'returned' && (
+        <span className="w-fit rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
+          คืนแล้ว
+        </span>
+      )}
     </div>
   );
 
@@ -412,232 +578,209 @@ export default function MyBookingsPage() {
         </Link>
       }
     >
-      <div className="space-y-8 pb-20">
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-xl shadow-slate-100/50">
-          <h2 className="text-xl font-black text-slate-800">
-            รายการที่กำลังใช้งานอยู่
-          </h2>
-          <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            รายการที่อนุมัติแล้วและยังไม่แจ้งคืน
-          </p>
+      <div className="space-y-7 pb-20">
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl shadow-slate-100/50 md:p-6">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <h2 className="text-xl font-black text-slate-800">
+                ค้นหารายการยืม
+              </h2>
+              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                ค้นหาจากชื่ออุปกรณ์ รหัสอุปกรณ์ เลขคำขอยืม หรือเหตุผลการยืม
+              </p>
+            </div>
+
+            <div className="grid w-full gap-3 xl:max-w-4xl xl:grid-cols-[1.2fr_1fr_0.8fr]">
+              <div className="relative">
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+                  size={18}
+                />
+                <input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="ค้นหา เช่น FG-001, BR-2026, Function Generator..."
+                  className="h-12 w-full rounded-2xl border border-slate-100 bg-slate-50 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-50"
+                />
+              </div>
+
+              <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+                <FilterButton
+                  active={statusFilter === 'all'}
+                  onClick={() => setStatusFilter('all')}
+                >
+                  ทั้งหมด
+                </FilterButton>
+                <FilterButton
+                  active={statusFilter === 'approved'}
+                  onClick={() => setStatusFilter('approved')}
+                >
+                  กำลังใช้งาน
+                </FilterButton>
+                <FilterButton
+                  active={statusFilter === 'return_pending'}
+                  onClick={() => setStatusFilter('return_pending')}
+                >
+                  รอรับคืน
+                </FilterButton>
+                <FilterButton
+                  active={statusFilter === 'returned'}
+                  onClick={() => setStatusFilter('returned')}
+                >
+                  คืนแล้ว
+                </FilterButton>
+              </div>
+
+              <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+                <FilterButton
+                  active={typeFilter === 'all'}
+                  onClick={() => setTypeFilter('all')}
+                >
+                  ทุกประเภท
+                </FilterButton>
+                <FilterButton
+                  active={typeFilter === 'equipment'}
+                  onClick={() => setTypeFilter('equipment')}
+                >
+                  อุปกรณ์
+                </FilterButton>
+                <FilterButton
+                  active={typeFilter === 'computer'}
+                  onClick={() => setTypeFilter('computer')}
+                >
+                  คอมพิวเตอร์
+                </FilterButton>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-[12px] font-black text-slate-500">
+            <SlidersHorizontal size={15} className="text-slate-400" />
+            พบรายการทั้งหมด {filteredBookings.length} รายการ
+            {searchTerm.trim() && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="rounded-full bg-white px-3 py-1 text-[11px] text-red-500 shadow-sm"
+              >
+                ล้างคำค้นหา
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {loading ? (
-            <div className="rounded-[2rem] border border-slate-100 bg-white p-10 text-center font-bold text-slate-400">
-              กำลังโหลดข้อมูล...
-            </div>
-          ) : approvedBookings.length > 0 ? (
-            approvedBookings.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-4 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${
-                      item.request_type === 'computer'
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'bg-indigo-50 text-indigo-600'
-                    }`}
-                  >
-                    {getRequestIcon(item)}
-                  </div>
+        {!loading && !hasAnyFilteredResult && (
+          <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
+            <Search size={38} className="mx-auto mb-3 text-slate-300" />
+            <p className="text-sm font-black text-slate-500">
+              ไม่พบรายการที่ค้นหา
+            </p>
+            <p className="mt-1 text-xs font-bold text-slate-400">
+              ลองเปลี่ยนคำค้นหา หรือเลือกตัวกรองเป็นทั้งหมด
+            </p>
+          </div>
+        )}
 
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-black text-slate-800">
-                        {getRequestTitle(item)}
-                      </p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                          item.request_type === 'computer'
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {item.request_type === 'computer'
-                          ? 'COMPUTER'
-                          : 'EQUIPMENT'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <RequestNoBadge item={item} />
-                      <EquipmentCodeBadge item={item} />
-                    </div>
-
-                    <p className="mt-2 text-[13px] font-bold uppercase tracking-widest text-slate-400">
-                      {getRequestSubtitle(item)}
-                    </p>
-
-                    <p className="mt-1 text-[13px] font-bold text-slate-500">
-                      วันที่ยืม: {formatThaiDateTime(item.borrow_date)}
-                    </p>
-
-                    <p className="mt-1 text-[13px] font-bold text-slate-500">
-                      กำหนดคืน: {formatThaiDateTime(item.return_date)}
-                    </p>
-
-                    {item.reason && (
-                      <p className="mt-1 text-[13px] text-slate-400">
-                        เหตุผล: {item.reason}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full rounded-xl bg-red-500 px-5 py-3 text-sm font-black uppercase text-white shadow-lg shadow-red-100 md:w-auto"
-                  onClick={() => handleRequestReturn(item)}
-                >
-                  {getRequestButtonText(item)}
-                </Button>
+        {(statusFilter === 'all' || statusFilter === 'approved') &&
+          hasAnyFilteredResult && (
+            <div className="space-y-4">
+              <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-xl shadow-slate-100/50">
+                <h2 className="text-xl font-black text-slate-800">
+                  รายการที่กำลังใช้งานอยู่
+                </h2>
+                <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  รายการที่อนุมัติแล้วและยังไม่แจ้งคืน
+                </p>
               </div>
-            ))
-          ) : (
-            <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-              <CheckCircle2 size={36} className="mx-auto mb-2 text-slate-300" />
-              <p className="text-sm font-bold italic text-slate-400">
-                ไม่มีรายการที่กำลังใช้งานอยู่
-              </p>
+
+              {loading ? (
+                <div className="rounded-[2rem] border border-slate-100 bg-white p-10 text-center font-bold text-slate-400">
+                  กำลังโหลดข้อมูล...
+                </div>
+              ) : filteredApprovedBookings.length > 0 ? (
+                filteredApprovedBookings.map((item) => (
+                  <BookingCard key={item.id} item={item} mode="approved" />
+                ))
+              ) : (
+                statusFilter === 'approved' && (
+                  <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+                    <CheckCircle2
+                      size={36}
+                      className="mx-auto mb-2 text-slate-300"
+                    />
+                    <p className="text-sm font-bold italic text-slate-400">
+                      ไม่มีรายการที่กำลังใช้งานอยู่
+                    </p>
+                  </div>
+                )
+              )}
             </div>
           )}
-        </div>
 
-        <div className="rounded-[2rem] border border-amber-100 bg-amber-50/50 p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-              <RotateCcw size={22} />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-slate-800">
-                รายการที่แจ้งคืนแล้ว
-              </h2>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                รอแอดมินยืนยันรับคืน
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {returnPendingBookings.length > 0 ? (
-              returnPendingBookings.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-amber-100 bg-white p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-black text-slate-800">
-                        {getRequestTitle(item)}
-                      </p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
-                          item.request_type === 'computer'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {item.request_type === 'computer'
-                          ? 'COMPUTER'
-                          : 'EQUIPMENT'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <RequestNoBadge item={item} />
-                      <EquipmentCodeBadge item={item} />
-                    </div>
-
-                    <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                      {getRequestSubtitle(item)}
-                    </p>
-
-                    <p className="mt-1 text-[13px] font-bold text-slate-500">
-                      วันที่กำหนดคืน: {formatThaiDateTime(item.return_date)}
-                    </p>
-                  </div>
-
-                  <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black text-amber-700">
-                    รอรับคืน
-                  </span>
+        {(statusFilter === 'all' || statusFilter === 'return_pending') &&
+          hasAnyFilteredResult && (
+            <div className="rounded-[2rem] border border-amber-100 bg-amber-50/50 p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                  <RotateCcw size={22} />
                 </div>
-              ))
-            ) : (
-              <p className="text-sm font-bold text-slate-400">
-                ไม่มีรายการรอรับคืน
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50/50 p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-              <Clock size={22} />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-slate-800">
-                ประวัติการคืนแล้ว
-              </h2>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                รายการที่แอดมินยืนยันรับคืนเรียบร้อย
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {returnedBookings.length > 0 ? (
-              returnedBookings.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-white p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-black text-slate-800">
-                        {getRequestTitle(item)}
-                      </p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
-                          item.request_type === 'computer'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {item.request_type === 'computer'
-                          ? 'COMPUTER'
-                          : 'EQUIPMENT'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <RequestNoBadge item={item} />
-                      <EquipmentCodeBadge item={item} />
-                    </div>
-
-                    <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                      {getRequestSubtitle(item)}
-                    </p>
-
-                    <p className="mt-1 text-[11px] font-bold text-slate-500">
-                      วันที่คืนสำเร็จ: {formatThaiDateTime(item.returned_at)}
-                    </p>
-                  </div>
-
-                  <span className="w-fit rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700">
-                    คืนแล้ว
-                  </span>
+                <div>
+                  <h2 className="text-lg font-black text-slate-800">
+                    รายการที่แจ้งคืนแล้ว
+                  </h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    รอแอดมินยืนยันรับคืน
+                  </p>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm font-bold text-slate-400">
-                ยังไม่มีประวัติคืนรายการ
-              </p>
-            )}
-          </div>
-        </div>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {filteredReturnPendingBookings.length > 0 ? (
+                  filteredReturnPendingBookings.map((item) => (
+                    <BookingCard
+                      key={item.id}
+                      item={item}
+                      mode="return_pending"
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm font-bold text-slate-400">
+                    ไม่มีรายการรอรับคืน
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+        {(statusFilter === 'all' || statusFilter === 'returned') &&
+          hasAnyFilteredResult && (
+            <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50/50 p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                  <Clock size={22} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-800">
+                    ประวัติการคืนแล้ว
+                  </h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    รายการที่แอดมินยืนยันรับคืนเรียบร้อย
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {filteredReturnedBookings.length > 0 ? (
+                  filteredReturnedBookings.map((item) => (
+                    <BookingCard key={item.id} item={item} mode="returned" />
+                  ))
+                ) : (
+                  <p className="text-sm font-bold text-slate-400">
+                    ยังไม่มีประวัติคืนรายการ
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
       </div>
 
       {popup.open && (
