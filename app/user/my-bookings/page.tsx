@@ -18,7 +18,6 @@ import {
   Eye,
   CalendarDays,
   User,
-  Grid2X2,
   Hourglass,
 } from 'lucide-react';
 
@@ -539,39 +538,25 @@ export default function MyBookingsPage() {
     </div>
   );
 
-  const StatusCard = ({
-    icon,
-    title,
-    value,
+  const FilterButton = ({
     active,
+    children,
     onClick,
-    color,
   }: {
-    icon: React.ReactNode;
-    title: string;
-    value: number;
     active: boolean;
+    children: React.ReactNode;
     onClick: () => void;
-    color: string;
   }) => (
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-[145px] items-center gap-3 rounded-2xl border bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${
+      className={`h-11 shrink-0 rounded-2xl border px-4 text-[12px] font-black transition-all ${
         active
-          ? 'border-blue-200 shadow-lg shadow-blue-100/50'
-          : 'border-slate-100 shadow-sm'
+          ? 'border-blue-100 bg-blue-50 text-blue-600 shadow-sm'
+          : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-600'
       }`}
     >
-      <div
-        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${color}`}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-[11px] font-black text-slate-400">{title}</p>
-        <p className="text-xl font-black text-slate-800">{value}</p>
-      </div>
+      {children}
     </button>
   );
 
@@ -728,81 +713,74 @@ export default function MyBookingsPage() {
         </div>
 
         <div className="rounded-[2rem] border border-slate-100 bg-white p-4 shadow-xl shadow-slate-100/60 md:p-5">
-          <div className="relative">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-              size={18}
-            />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="ค้นหาชื่ออุปกรณ์ / เลขคำขอ / รหัสรายการ..."
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
-            />
-          </div>
-        </div>
+          <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr] xl:items-center">
+            <div className="relative">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+                size={18}
+              />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="ค้นหาชื่ออุปกรณ์ / เลขคำขอ / รหัสรายการ..."
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+              />
+            </div>
 
-        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
-          <StatusCard
-            icon={<Grid2X2 size={22} />}
-            title="ทั้งหมด"
-            value={stats.all}
-            active={statusFilter === 'all'}
-            onClick={() => setStatusFilter('all')}
-            color="bg-blue-50 text-blue-600"
-          />
-          <StatusCard
-            icon={<Hourglass size={22} />}
-            title="กำลังขอใช้งาน"
-            value={stats.pending}
-            active={statusFilter === 'pending'}
-            onClick={() => setStatusFilter('pending')}
-            color="bg-amber-50 text-amber-600"
-          />
-          <StatusCard
-            icon={<Clock size={22} />}
-            title="กำลังใช้งาน"
-            value={stats.approved}
-            active={statusFilter === 'approved'}
-            onClick={() => setStatusFilter('approved')}
-            color="bg-blue-50 text-blue-600"
-          />
-          <StatusCard
-            icon={<RotateCcw size={22} />}
-            title="รอรับคืน"
-            value={stats.returnPending}
-            active={statusFilter === 'return_pending'}
-            onClick={() => setStatusFilter('return_pending')}
-            color="bg-orange-50 text-orange-600"
-          />
-          <StatusCard
-            icon={<CheckCircle2 size={22} />}
-            title="คืนแล้ว"
-            value={stats.returned}
-            active={statusFilter === 'returned'}
-            onClick={() => setStatusFilter('returned')}
-            color="bg-emerald-50 text-emerald-600"
-          />
-          <StatusCard
-            icon={<Package size={22} />}
-            title="อุปกรณ์"
-            value={stats.equipment}
-            active={typeFilter === 'equipment'}
-            onClick={() =>
-              setTypeFilter(typeFilter === 'equipment' ? 'all' : 'equipment')
-            }
-            color="bg-indigo-50 text-indigo-600"
-          />
-          <StatusCard
-            icon={<Monitor size={22} />}
-            title="คอมพิวเตอร์"
-            value={stats.computer}
-            active={typeFilter === 'computer'}
-            onClick={() =>
-              setTypeFilter(typeFilter === 'computer' ? 'all' : 'computer')
-            }
-            color="bg-sky-50 text-sky-600"
-          />
+            <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+              <FilterButton
+                active={statusFilter === 'all'}
+                onClick={() => setStatusFilter('all')}
+              >
+                สถานะทั้งหมด
+              </FilterButton>
+              <FilterButton
+                active={statusFilter === 'pending'}
+                onClick={() => setStatusFilter('pending')}
+              >
+                กำลังขอใช้งาน
+              </FilterButton>
+              <FilterButton
+                active={statusFilter === 'approved'}
+                onClick={() => setStatusFilter('approved')}
+              >
+                กำลังใช้งาน
+              </FilterButton>
+              <FilterButton
+                active={statusFilter === 'return_pending'}
+                onClick={() => setStatusFilter('return_pending')}
+              >
+                รอรับคืน
+              </FilterButton>
+              <FilterButton
+                active={statusFilter === 'returned'}
+                onClick={() => setStatusFilter('returned')}
+              >
+                คืนแล้ว
+              </FilterButton>
+            </div>
+
+            <div className="flex min-w-0 gap-2 overflow-x-auto pb-1 xl:justify-end">
+              <FilterButton
+                active={typeFilter === 'all'}
+                onClick={() => setTypeFilter('all')}
+              >
+                ประเภททั้งหมด
+              </FilterButton>
+              <FilterButton
+                active={typeFilter === 'equipment'}
+                onClick={() => setTypeFilter('equipment')}
+              >
+                อุปกรณ์
+              </FilterButton>
+              <FilterButton
+                active={typeFilter === 'computer'}
+                onClick={() => setTypeFilter('computer')}
+              >
+                คอมพิวเตอร์
+              </FilterButton>
+            </div>
+          </div>
         </div>
 
         {activeBookings.length > 0 && (
