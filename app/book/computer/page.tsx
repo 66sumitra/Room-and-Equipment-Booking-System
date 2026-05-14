@@ -41,7 +41,7 @@ export default function BookComputerPage() {
     setIsBookingModalOpen(false);
     setToast({
       isVisible: true,
-      message: `จอง ${selectedComputer?.pcCode} สำเร็จ! รอการอนุมัติ`,
+      message: `ยืม ${selectedComputer?.pcCode} สำเร็จ! รอการอนุมัติ`,
       type: 'success',
     });
   };
@@ -53,13 +53,13 @@ export default function BookComputerPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">จองคอมพิวเตอร์ในห้องคอม</h1>
-              <p className="text-sm text-gray-500 mt-1">เลือกห้อง วันที่ เวลา และเครื่องที่ต้องการจอง</p>
+              <h1 className="text-2xl font-bold text-gray-800">ยืมคอมพิวเตอร์ในห้องคอม</h1>
+              <p className="text-sm text-gray-500 mt-1">เลือกห้อง วันที่ เวลา และเครื่องที่ต้องการยืม</p>
             </div>
             <div className="flex items-center gap-4">
               <Link href="/user/my-bookings">
                 <Button variant="secondary" size="md">
-                  ประวัติการจองของฉัน
+                  ประวัติการยืมของฉัน
                 </Button>
               </Link>
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
@@ -167,7 +167,7 @@ export default function BookComputerPage() {
       <Modal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
-        title="ยืนยันการจอง"
+        title="ยืนยันการยืม"
         size="md"
       >
         {selectedComputer && (
@@ -221,7 +221,7 @@ export default function BookComputerPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  ยืนยันการจอง
+                  ยืนยันการยืม
                 </span>
               </Button>
               <Button

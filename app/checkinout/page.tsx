@@ -83,7 +83,7 @@ export default function CheckInOutPage() {
               </div>
               <input
                 type="text"
-                placeholder="ค้นหาด้วยชื่อ, QR Code, หรือชื่อผู้จอง..."
+                placeholder="ค้นหาด้วยชื่อ, QR Code, หรือชื่อผู้ยืม..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -103,7 +103,7 @@ export default function CheckInOutPage() {
         {/* Active Bookings */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">การจองที่กำลังใช้งาน</h2>
+            <h2 className="text-lg font-semibold text-gray-800">การยืมที่กำลังใช้งาน</h2>
             <p className="text-sm text-gray-500 mt-1">วันนี้ ({new Date().toLocaleDateString('th-TH')})</p>
           </div>
           <div className="overflow-x-auto">
@@ -112,7 +112,7 @@ export default function CheckInOutPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">QR Code</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รายการ</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ผู้จอง</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ผู้ยืม</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">เวลา</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">การดำเนินการ</th>
@@ -198,7 +198,7 @@ export default function CheckInOutPage() {
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">รายการ</p>
               <p className="text-lg font-semibold text-gray-800">{selectedBooking.itemName}</p>
-              <p className="text-sm text-gray-600 mt-1">ผู้จอง: {selectedBooking.userName}</p>
+              <p className="text-sm text-gray-600 mt-1">ผู้ยืม: {selectedBooking.userName}</p>
               <p className="text-sm text-gray-600">QR Code: {selectedBooking.qrCode}</p>
             </div>
 
@@ -246,7 +246,7 @@ export default function CheckInOutPage() {
             <div className="bg-green-50 rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">รายการ</p>
               <p className="text-lg font-semibold text-gray-800">{selectedBooking.itemName}</p>
-              <p className="text-sm text-gray-600 mt-1">ผู้จอง: {selectedBooking.userName}</p>
+              <p className="text-sm text-gray-600 mt-1">ผู้ยืม: {selectedBooking.userName}</p>
               <p className="text-sm text-gray-600">QR Code: {selectedBooking.qrCode}</p>
               {selectedBooking.checkedInAt && (
                 <p className="text-sm text-gray-600">เช็คอินเมื่อ: {selectedBooking.checkedInAt}</p>

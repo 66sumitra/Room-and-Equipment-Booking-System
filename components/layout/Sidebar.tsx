@@ -64,7 +64,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    name: 'อนุมัติการจอง',
+    name: 'อนุมัติการยืม',
     href: '/approvals',
     roles: ['admin'],
     icon: (
@@ -74,7 +74,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    name: 'รายงานการจอง',
+    name: 'รายงานการยืม',
     href: '/bookings',
     roles: ['admin'],
     icon: (
@@ -84,7 +84,7 @@ const navItems: NavItem[] = [
     ),
   },
 //  {
-//    name: 'นโยบายการจอง',
+//    name: 'นโยบายการยืม',
 //    href: '/admin/settings/rules',
 //   roles: ['admin'],
 //    icon: (

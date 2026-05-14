@@ -752,7 +752,7 @@ export default function BookingPage() {
               className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-black text-slate-500 shadow-sm transition hover:border-blue-300 hover:text-blue-600"
             >
               <Clock size={14} />
-              <span>ประวัติการจอง</span>
+              <span>ประวัติการยืม</span>
             </Button>
           </Link>
 

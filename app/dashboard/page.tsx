@@ -373,7 +373,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between px-1 md:px-2">
                 <h2 className="flex items-center gap-2 text-lg font-black text-slate-800 md:text-xl">
                   <span className="h-2 w-2 rounded-full bg-blue-600"></span>
-                  ประวัติการจองล่าสุด
+                  ประวัติการยืมล่าสุด
                 </h2>
 
                 <Link
@@ -434,7 +434,7 @@ export default function DashboardPage() {
                             </div>
 
                             <p className="text-xs font-bold text-slate-500">
-                              ผู้จอง: {getUserDisplayName(b)}
+                              ผู้ยืม: {getUserDisplayName(b)}
                             </p>
 
                             <p className="text-xs font-bold text-slate-400">
@@ -477,7 +477,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <p className="py-10 text-center font-bold text-slate-300">
-                    ไม่มีข้อมูลการจอง
+                    ไม่มีข้อมูลการยืมล่าสุด
                   </p>
                 )}
               </div>

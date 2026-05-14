@@ -9,9 +9,9 @@ export interface User {
   phone?: string;
   createdAt: Date;
   specialPermissions?: {
-    advanceBookingDays?: number; // อาจารย์: จองล่วงหน้าได้นานกว่า
-    canBookWeekly?: boolean; // จองเป็นรายสัปดาห์ได้
-    canBookSemester?: boolean; // จองตลอดเทอมได้
+    advanceBookingDays?: number; 
+    canBookWeekly?: boolean; 
+    canBookSemester?: boolean; 
   };
 }
 
@@ -93,11 +93,11 @@ export interface BookingRule {
   id: string;
   userRole: UserRole;
   itemType: 'computer' | 'equipment';
-  advanceBookingDays: number; // จองล่วงหน้าได้กี่วัน
-  maxBookingHours?: number; // สูงสุดต่อวัน (สำหรับคอม)
-  maxBookingDays?: number; // สูงสุดต่อครั้ง (สำหรับอุปกรณ์)
-  timeSlotStep?: number; // step ละกี่ชั่วโมง (สำหรับคอม)
-  allowedEquipmentCategories?: string[]; // อุปกรณ์ประเภทไหนยืมได้
+  advanceBookingDays: number; 
+  maxBookingHours?: number; 
+  maxBookingDays?: number; 
+  timeSlotStep?: number; 
+  allowedEquipmentCategories?: string[]; 
 }
 
 export interface Notification {

@@ -69,7 +69,7 @@ export default function BookingRulesPage() {
 
   return (
     <DashboardLayout
-      title="นโยบายการจอง"
+      title="นโยบายการยืม"
       actionButton={
         <Button
           variant="success"
@@ -88,7 +88,7 @@ export default function BookingRulesPage() {
       <div className="space-y-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>หมายเหตุ:</strong> ตั้งค่านโยบายการจองสำหรับคอมพิวเตอร์แต่ละเครื่องและอุปกรณ์
+            <strong>หมายเหตุ:</strong> ตั้งค่านโยบายการยืมสำหรับคอมพิวเตอร์แต่ละเครื่องและอุปกรณ์
             สามารถกำหนดสิทธิ์ตามบทบาทผู้ใช้ได้
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function BookingRulesPage() {
               
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">จองล่วงหน้าได้</span>
+                  <span className="text-sm text-gray-600">ยืมล่วงหน้าได้</span>
                   <span className="font-semibold text-gray-800">{rule.advanceBookingDays} วัน</span>
                 </div>
                 
@@ -159,7 +159,7 @@ export default function BookingRulesPage() {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="เพิ่มกฎการจอง"
+        title="เพิ่มกฎการยืม"
         size="lg"
       >
         <div className="space-y-4">
@@ -172,7 +172,7 @@ export default function BookingRulesPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">ประเภทการจอง</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">ประเภทการยืม</label>
             <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="computer">คอมพิวเตอร์</option>
               <option value="equipment">อุปกรณ์</option>
@@ -181,7 +181,7 @@ export default function BookingRulesPage() {
           <div>
             <Input
               type="number"
-              label="จองล่วงหน้าได้ (วัน)"
+              label="ยืมล่วงหน้าได้ (วัน)"
               placeholder="เช่น 3"
               className="w-full"
             />
@@ -216,7 +216,7 @@ export default function BookingRulesPage() {
                 setIsAddModalOpen(false);
                 setToast({
                   isVisible: true,
-                  message: 'เพิ่มกฎการจองสำเร็จ!',
+                  message: 'เพิ่มกฎการยืมสำเร็จ!',
                   type: 'success',
                 });
               }}
@@ -238,7 +238,7 @@ export default function BookingRulesPage() {
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        title="แก้ไขกฎการจอง"
+        title="แก้ไขกฎการยืม"
         size="lg"
       >
         {selectedRule && (
@@ -255,7 +255,7 @@ export default function BookingRulesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">ประเภทการจอง</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">ประเภทการยืม</label>
               <select
                 defaultValue={selectedRule.itemType}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -267,7 +267,7 @@ export default function BookingRulesPage() {
             <div>
               <Input
                 type="number"
-                label="จองล่วงหน้าได้ (วัน)"
+                label="ยืมล่วงหน้าได้ (วัน)"
                 defaultValue={selectedRule.advanceBookingDays}
                 className="w-full"
               />
@@ -309,7 +309,7 @@ export default function BookingRulesPage() {
                   setIsEditModalOpen(false);
                   setToast({
                     isVisible: true,
-                    message: 'แก้ไขกฎการจองสำเร็จ!',
+                    message: 'แก้ไขกฎการยืมสำเร็จ!',
                     type: 'success',
                   });
                 }}

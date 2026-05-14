@@ -79,7 +79,7 @@ export default function BookEquipmentPage() {
     setIsBookingModalOpen(false);
     setToast({
       isVisible: true,
-      message: `จอง ${selectedEquipment?.name} สำเร็จ! ${selectedEquipment?.requiresApproval ? 'รอการอนุมัติ' : 'จองสำเร็จ'}`,
+      message: `ยืม ${selectedEquipment?.name} สำเร็จ! ${selectedEquipment?.requiresApproval ? 'รอการอนุมัติ' : 'ยืมสำเร็จ'}`,
       type: 'success',
     });
   };
@@ -91,13 +91,13 @@ export default function BookEquipmentPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">จองอุปกรณ์ในห้อง Lab</h1>
+              <h1 className="text-2xl font-bold text-gray-800">ยืมอุปกรณ์ในห้อง Lab</h1>
               <p className="text-sm text-gray-500 mt-1">เลือกห้อง Lab และอุปกรณ์ที่ต้องการยืม</p>
             </div>
             <div className="flex items-center gap-4">
               <Link href="/user/my-bookings">
                 <Button variant="secondary" size="md">
-                  ประวัติการจองของฉัน
+                  ประวัติการยืมของฉัน
                 </Button>
               </Link>
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
@@ -235,7 +235,7 @@ export default function BookEquipmentPage() {
       <Modal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
-        title="ยืนยันการจองอุปกรณ์"
+        title="ยืนยันการยืมอุปกรณ์"
         size="md"
       >
         {selectedEquipment && (
@@ -306,7 +306,7 @@ export default function BookEquipmentPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  ยืนยันการจอง
+                  ยืนยันการยืม
                 </span>
               </Button>
               <Button

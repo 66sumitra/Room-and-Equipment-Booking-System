@@ -325,7 +325,7 @@ export default function AdminReportsPage() {
               <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-12 text-center">
                 <Search size={36} className="mx-auto mb-3 text-slate-300" />
                 <p className="text-sm font-bold text-slate-400">
-                  ยังไม่มีข้อมูลรายการจอง
+                  ยังไม่มีข้อมูลรายการยืม-คืนในขณะนี้
                 </p>
               </div>
             )}
@@ -336,7 +336,7 @@ export default function AdminReportsPage() {
       <div className="print-only">
         <div className="relative mb-10 border-b border-slate-200 pb-8 text-center">
           <h1 className="mb-1 text-2xl font-bold text-slate-900">
-            รายงานสรุปผลการจองและเบิก-ยืมอุปกรณ์
+            รายงานสรุปผลการยืมและ-คืนอุปกรณ์
           </h1>
           <p className="text-sm font-medium uppercase tracking-widest text-slate-500">
             Faculty of Engineering and Technology (PIM)

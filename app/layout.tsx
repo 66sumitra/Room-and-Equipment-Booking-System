@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ระบบจองห้องคอมและอุปกรณ์",
-  description: "ระบบจองห้องคอมพิวเตอร์และอุปกรณ์",
+  title: "ระบบยืมห้องคอมและอุปกรณ์",
+  description: "ระบบยืมห้องคอมพิวเตอร์และอุปกรณ์",
 };
 
 export default function RootLayout({
