@@ -48,7 +48,10 @@ export default function AdminReportsPage() {
         created_at,
         equipment (
           name,
-          category
+          category,
+          code,
+          equipment_code,
+          item_code
         ),
         computers (
           pc_name,
@@ -93,6 +96,23 @@ export default function AdminReportsPage() {
     }
 
     return item.equipment?.name || 'อุปกรณ์';
+  };
+
+  const getItemCode = (item: any) => {
+    if (item.request_type === 'computer') {
+      return item.computers?.pc_name || 'ไม่มีรหัสคอมพิวเตอร์';
+    }
+
+    return (
+      item.equipment?.code ||
+      item.equipment?.equipment_code ||
+      item.equipment?.item_code ||
+      'ไม่มีรหัสอุปกรณ์'
+    );
+  };
+
+  const getItemCodeLabel = (item: any) => {
+    return item.request_type === 'computer' ? 'รหัสคอมพิวเตอร์' : 'รหัสอุปกรณ์';
   };
 
   const getItemDetail = (item: any) => {
@@ -155,8 +175,8 @@ export default function AdminReportsPage() {
           }
 
           @page {
-            size: A4;
-            margin: 20mm;
+            size: A4 landscape;
+            margin: 14mm;
           }
 
           table {
@@ -168,16 +188,17 @@ export default function AdminReportsPage() {
           th {
             background-color: #f8fafc !important;
             border: 1px solid #e2e8f0 !important;
-            padding: 12px 8px !important;
+            padding: 10px 6px !important;
             color: #475569 !important;
-            font-size: 10pt !important;
+            font-size: 9pt !important;
           }
 
           td {
             border: 1px solid #f1f5f9 !important;
-            padding: 10px 8px !important;
-            font-size: 10pt !important;
+            padding: 8px 6px !important;
+            font-size: 9pt !important;
             color: #334155 !important;
+            vertical-align: top !important;
           }
         }
       `}</style>
@@ -254,14 +275,20 @@ export default function AdminReportsPage() {
                   key={item.id}
                   className="flex flex-col justify-between gap-6 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl md:flex-row md:items-center"
                 >
-                  <div className="flex items-center gap-5">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-2xl shadow-inner">
+                  <div className="flex items-start gap-5">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-2xl shadow-inner">
                       {item.request_type === 'computer' ? '💻' : '📦'}
                     </div>
 
                     <div>
-                      <div className="mb-2 inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-600">
-                        เลขคำขอยืม: {getRequestNo(item)}
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        <div className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-600">
+                          เลขคำขอยืม: {getRequestNo(item)}
+                        </div>
+
+                        <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-600">
+                          {getItemCodeLabel(item)}: {getItemCode(item)}
+                        </div>
                       </div>
 
                       <h3 className="text-lg font-bold leading-tight text-slate-800">
@@ -324,15 +351,16 @@ export default function AdminReportsPage() {
         <table className="w-full">
           <thead>
             <tr>
-              <th className="w-10 text-center">#</th>
-              <th className="w-36 text-left">เลขคำขอยืม</th>
+              <th className="w-8 text-center">#</th>
+              <th className="w-32 text-left">เลขคำขอยืม</th>
+              <th className="w-28 text-left">รหัสรายการ</th>
               <th className="text-left">รายการ</th>
-              <th className="w-28 text-left">ประเภท</th>
-              <th className="w-36 text-left">ผู้เบิก/ยืม</th>
-              <th className="w-48 text-center font-bold">
+              <th className="w-24 text-left">ประเภท</th>
+              <th className="w-34 text-left">ผู้เบิก/ยืม</th>
+              <th className="w-44 text-center font-bold">
                 กำหนดเวลา ยืม - คืน
               </th>
-              <th className="w-24 text-center">สถานะ</th>
+              <th className="w-20 text-center">สถานะ</th>
             </tr>
           </thead>
 
@@ -343,6 +371,10 @@ export default function AdminReportsPage() {
 
                 <td className="font-bold text-indigo-600">
                   {getRequestNo(item)}
+                </td>
+
+                <td className="font-bold text-blue-600">
+                  {getItemCode(item)}
                 </td>
 
                 <td>
