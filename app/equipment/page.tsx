@@ -585,31 +585,13 @@ export default function AdminEquipmentPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Input
+           <Input
               label="ชื่ออุปกรณ์"
-              value={formData.name}
-              onChange={(e: any) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-
-            <div>
-              <label className="mb-2 block text-sm font-black text-slate-700">
-                รหัสอุปกรณ์
-              </label>
-
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">
-                {modalMode === 'add'
-                  ? 'ระบบจะสร้างรหัสให้อัตโนมัติหลังบันทึก'
-                  : formData.code || 'ยังไม่มีรหัส'}
-              </div>
-
-              <p className="mt-1 text-[11px] font-bold text-slate-400">
-                ตัวอย่างรหัส: FG-001, PSU-001, DM-001
-              </p>
-            </div>
-          </div>
+                     value={formData.name}
+                 onChange={(e: any) =>
+                  setFormData({ ...formData, name: e.target.value })
+             }
+          />
 
           <Input
             label="หมวดหมู่อุปกรณ์"
