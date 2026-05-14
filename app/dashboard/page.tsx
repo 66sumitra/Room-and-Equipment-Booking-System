@@ -128,6 +128,7 @@ export default function DashboardPage() {
     if (status === 'checked_in') return 'กำลังใช้งาน';
     if (status === 'overdue') return 'เกินกำหนด';
     if (isReturnPendingStatus(status)) return 'รอรับคืน';
+
     return 'รออนุมัติ';
   };
 
@@ -228,7 +229,7 @@ export default function DashboardPage() {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
         })
-        .slice(0, 5);
+        .slice(0, 12);
 
       setStats({
         totalRooms: 5,
@@ -382,7 +383,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              <div className="space-y-3 rounded-[2rem] border border-slate-100 bg-white p-3 shadow-sm md:rounded-[2.5rem] md:p-4">
+              <div className="custom-scrollbar max-h-[470px] space-y-3 overflow-y-auto rounded-[2rem] border border-slate-100 bg-white p-3 pr-2 shadow-sm md:rounded-[2.5rem] md:p-4 md:pr-2">
                 {recentBookings.length > 0 ? (
                   recentBookings.map((b) => (
                     <div
@@ -488,97 +489,99 @@ export default function DashboardPage() {
               </h2>
 
               <div className="space-y-4">
-                {pendingList.length > 0 ? (
-                  pendingList.map((req) => (
-                    <div
-                      key={req.id}
-                      className={`rounded-[1.7rem] border p-4 transition-all hover:shadow-lg md:rounded-[2rem] md:p-5 ${
-                        req.urgent
-                          ? 'border-red-100 bg-red-50 ring-2 ring-red-500/5'
-                          : 'border-slate-100 bg-white shadow-sm'
-                      }`}
-                    >
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <p className="break-words text-sm font-black leading-snug text-slate-800">
-                              {getDisplayName(req)}
+                <div className="custom-scrollbar max-h-[470px] space-y-4 overflow-y-auto pr-2">
+                  {pendingList.length > 0 ? (
+                    pendingList.map((req) => (
+                      <div
+                        key={req.id}
+                        className={`rounded-[1.7rem] border p-4 transition-all hover:shadow-lg md:rounded-[2rem] md:p-5 ${
+                          req.urgent
+                            ? 'border-red-100 bg-red-50 ring-2 ring-red-500/5'
+                            : 'border-slate-100 bg-white shadow-sm'
+                        }`}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex flex-wrap items-center gap-2">
+                              <p className="break-words text-sm font-black leading-snug text-slate-800">
+                                {getDisplayName(req)}
+                              </p>
+
+                              {req.urgent ? (
+                                <span className="animate-pulse rounded-lg bg-red-600 px-2 py-0.5 text-[8px] font-black uppercase text-white">
+                                  Urgent
+                                </span>
+                              ) : (
+                                <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[8px] font-black uppercase text-slate-600">
+                                  Normal
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <RequestNoBadge item={req} />
+                              <ItemCodeBadge item={req} />
+                            </div>
+
+                            <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              {getItemDetail(req)}
                             </p>
 
-                            {req.urgent ? (
-                              <span className="animate-pulse rounded-lg bg-red-600 px-2 py-0.5 text-[8px] font-black uppercase text-white">
-                                Urgent
-                              </span>
-                            ) : (
-                              <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[8px] font-black uppercase text-slate-600">
-                                Normal
-                              </span>
+                            {req.reason && (
+                              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                                เหตุผล: {req.reason}
+                              </p>
                             )}
                           </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            <RequestNoBadge item={req} />
-                            <ItemCodeBadge item={req} />
+                          <Link href={`/approvals?id=${req.id}`}>
+                            <button
+                              className={`rounded-xl p-2 text-white shadow-lg transition-all active:scale-90 ${
+                                req.urgent
+                                  ? 'bg-red-600 shadow-red-200'
+                                  : 'bg-blue-600 shadow-blue-200'
+                              }`}
+                            >
+                              <ChevronRight size={18} />
+                            </button>
+                          </Link>
+                        </div>
+
+                        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="text-[11px] font-bold text-slate-500">
+                            👤 {getUserDisplayName(req)}
                           </div>
 
-                          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                            {getItemDetail(req)}
-                          </p>
-
-                          {req.reason && (
-                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">
-                              เหตุผล: {req.reason}
-                            </p>
-                          )}
-                        </div>
-
-                        <Link href={`/approvals?id=${req.id}`}>
-                          <button
-                            className={`rounded-xl p-2 text-white shadow-lg transition-all active:scale-90 ${
-                              req.urgent
-                                ? 'bg-red-600 shadow-red-200'
-                                : 'bg-blue-600 shadow-blue-200'
+                          <div
+                            className={`text-[10px] font-black ${
+                              req.urgent ? 'text-red-500' : 'text-slate-400'
                             }`}
                           >
-                            <ChevronRight size={18} />
-                          </button>
-                        </Link>
-                      </div>
-
-                      <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="text-[11px] font-bold text-slate-500">
-                          👤 {getUserDisplayName(req)}
-                        </div>
-
-                        <div
-                          className={`text-[10px] font-black ${
-                            req.urgent ? 'text-red-500' : 'text-slate-400'
-                          }`}
-                        >
-                          ⏰{' '}
-                          {new Date(req.created_at).toLocaleTimeString(
-                            'th-TH',
-                            {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            }
-                          )}{' '}
-                          น.
+                            ⏰{' '}
+                            {new Date(req.created_at).toLocaleTimeString(
+                              'th-TH',
+                              {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }
+                            )}{' '}
+                            น.
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-10 text-center md:rounded-[2.5rem] md:p-12">
+                      <CheckCircle2
+                        size={32}
+                        className="mx-auto mb-2 text-slate-300"
+                      />
+                      <p className="text-sm font-bold italic tracking-tight text-slate-400">
+                        ไม่มีรายการค้าง
+                      </p>
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-10 text-center md:rounded-[2.5rem] md:p-12">
-                    <CheckCircle2
-                      size={32}
-                      className="mx-auto mb-2 text-slate-300"
-                    />
-                    <p className="text-sm font-bold italic tracking-tight text-slate-400">
-                      ไม่มีรายการค้าง
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <Link href="/approvals" className="mt-4 block">
                   <button className="group flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-slate-900 py-4 text-xs font-black text-white shadow-xl shadow-slate-200 transition-all hover:bg-black">
@@ -591,6 +594,26 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          <style jsx global>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 8px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: #f1f5f9;
+              border-radius: 999px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: #cbd5e1;
+              border-radius: 999px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #94a3b8;
+            }
+          `}</style>
         </div>
       )}
     </DashboardLayout>
