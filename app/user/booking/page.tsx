@@ -273,7 +273,7 @@ function DateTimePickerPopup({
               <p className="mt-1 text-xs font-bold text-white/80">
                 {picker.type === 'date'
                   ? 'เลือกวัน เดือน ปี ได้เอง'
-                  : 'เลือกเวลาแบบ 24 ชั่วโมง ไม่ต้องเลือก AM/PM'}
+                  : 'เลือกเวลาที่ท่านต้องการยืมหรือคืนอุปกรณ์'}
               </p>
             </div>
 
