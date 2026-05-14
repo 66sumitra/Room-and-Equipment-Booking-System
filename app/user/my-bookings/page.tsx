@@ -132,6 +132,18 @@ export default function MyBookingsPage() {
     }
   };
 
+  const formatThaiDateTime = (dateTime: string | null | undefined) => {
+    if (!dateTime) return 'ไม่ระบุ';
+
+    return new Date(dateTime).toLocaleString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const fetchBookings = async (userEmail: string) => {
     try {
       setLoading(true);
@@ -140,6 +152,7 @@ export default function MyBookingsPage() {
         .from('borrow_requests')
         .select(`
           id,
+          request_no,
           status,
           request_type,
           created_at,
@@ -163,7 +176,9 @@ export default function MyBookingsPage() {
       const equipmentIds = Array.from(
         new Set(
           rows
-            .filter((item) => item.request_type === 'equipment' && item.equipment_id)
+            .filter(
+              (item) => item.request_type === 'equipment' && item.equipment_id
+            )
             .map((item) => item.equipment_id)
         )
       );
@@ -171,7 +186,10 @@ export default function MyBookingsPage() {
       const computerIds = Array.from(
         new Set(
           rows
-            .filter((item) => item.request_type === 'computer' && item.computer_id !== null)
+            .filter(
+              (item) =>
+                item.request_type === 'computer' && item.computer_id !== null
+            )
             .map((item) => item.computer_id)
         )
       );
@@ -187,7 +205,9 @@ export default function MyBookingsPage() {
 
         if (equipmentError) throw equipmentError;
 
-        equipmentMap = new Map((equipmentData || []).map((item) => [item.id, item]));
+        equipmentMap = new Map(
+          (equipmentData || []).map((item) => [item.id, item])
+        );
       }
 
       if (computerIds.length > 0) {
@@ -198,7 +218,9 @@ export default function MyBookingsPage() {
 
         if (computerError) throw computerError;
 
-        computerMap = new Map((computerData || []).map((item) => [item.id, item]));
+        computerMap = new Map(
+          (computerData || []).map((item) => [item.id, item])
+        );
       }
 
       const mergedRows = rows.map((item) => ({
@@ -213,11 +235,15 @@ export default function MyBookingsPage() {
             : null,
       }));
 
-      setApprovedBookings(mergedRows.filter((item) => item.status === 'approved'));
+      setApprovedBookings(
+        mergedRows.filter((item) => item.status === 'approved')
+      );
       setReturnPendingBookings(
         mergedRows.filter((item) => item.status === 'return_pending')
       );
-      setReturnedBookings(mergedRows.filter((item) => item.status === 'returned'));
+      setReturnedBookings(
+        mergedRows.filter((item) => item.status === 'returned')
+      );
     } catch (error: any) {
       console.error('fetchBookings error:', error.message);
       setApprovedBookings([]);
@@ -248,6 +274,10 @@ export default function MyBookingsPage() {
     return item?.request_type === 'computer' ? 'คอมพิวเตอร์' : 'อุปกรณ์';
   };
 
+  const getRequestNo = (item: any) => {
+    return item?.request_no || 'ยังไม่มีเลขคำขอ';
+  };
+
   const handleRequestReturn = async (item: any) => {
     try {
       const { error } = await supabase
@@ -260,6 +290,7 @@ export default function MyBookingsPage() {
       const itemName = getRequestTitle(item);
       const itemTypeText = getRequestTypeText(item);
       const itemSubtitle = getRequestSubtitle(item);
+      const requestNo = getRequestNo(item);
       const userEmail = item.user_email || currentUserEmail;
 
       const { data: admins, error: adminError } = await supabase
@@ -276,7 +307,7 @@ export default function MyBookingsPage() {
           adminEmails.map((adminEmail) => ({
             user_email: adminEmail,
             title: 'มีคำขอคืนใหม่',
-            message: `${userEmail} ได้ส่งคำขอคืน ${itemName}`,
+            message: `${userEmail} ได้ส่งคำขอคืน ${itemName} เลขคำขอ ${requestNo}`,
             type: 'return_requested',
             related_request_id: item.id,
           }))
@@ -289,7 +320,10 @@ export default function MyBookingsPage() {
               'มีคำขอคืนใหม่',
               `มีคำขอคืน${itemTypeText}ใหม่จากผู้ใช้ ${userEmail}
 
+รายละเอียดคำขอคืน
+เลขคำขอยืม: ${requestNo}
 รายการที่ขอคืน: ${itemName}
+ประเภท: ${itemTypeText}
 รายละเอียด: ${itemSubtitle}
 เหตุผลเดิม: ${item.reason || 'ไม่ระบุ'}
 
@@ -304,7 +338,7 @@ export default function MyBookingsPage() {
           {
             user_email: userEmail,
             title: 'ส่งคำขอคืนสำเร็จ',
-            message: `คุณได้ส่งคำขอคืน ${itemName} แล้ว กรุณารอแอดมินยืนยันรับคืน`,
+            message: `คุณได้ส่งคำขอคืน ${itemName} เลขคำขอ ${requestNo} แล้ว กรุณารอแอดมินยืนยันรับคืน`,
             type: 'return_requested',
             related_request_id: item.id,
           },
@@ -315,8 +349,8 @@ export default function MyBookingsPage() {
         'success',
         'แจ้งคืนสำเร็จ',
         item.request_type === 'computer'
-          ? 'แจ้งคืนคอมพิวเตอร์เรียบร้อยแล้ว กรุณารอแอดมินยืนยันรับคืน'
-          : 'แจ้งคืนอุปกรณ์เรียบร้อยแล้ว กรุณารอแอดมินยืนยันรับคืน'
+          ? `แจ้งคืนคอมพิวเตอร์เรียบร้อยแล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
+          : `แจ้งคืนอุปกรณ์เรียบร้อยแล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
       );
 
       fetchBookings(currentUserEmail);
@@ -334,8 +368,16 @@ export default function MyBookingsPage() {
   };
 
   const getRequestButtonText = (item: any) => {
-    return item?.request_type === 'computer' ? 'แจ้งคืนคอมพิวเตอร์' : 'แจ้งคืนอุปกรณ์';
+    return item?.request_type === 'computer'
+      ? 'แจ้งคืนคอมพิวเตอร์'
+      : 'แจ้งคืนอุปกรณ์';
   };
+
+  const RequestNoBadge = ({ item }: { item: any }) => (
+    <div className="mt-2 inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black text-blue-700">
+      เลขคำขอยืม: {getRequestNo(item)}
+    </div>
+  );
 
   return (
     <DashboardLayout
@@ -350,7 +392,9 @@ export default function MyBookingsPage() {
     >
       <div className="space-y-8 pb-20">
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-xl shadow-slate-100/50">
-          <h2 className="text-xl font-black text-slate-800">รายการที่กำลังใช้งานอยู่</h2>
+          <h2 className="text-xl font-black text-slate-800">
+            รายการที่กำลังใช้งานอยู่
+          </h2>
           <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
             รายการที่อนุมัติแล้วและยังไม่แจ้งคืน
           </p>
@@ -390,16 +434,24 @@ export default function MyBookingsPage() {
                             : 'bg-slate-100 text-slate-700'
                         }`}
                       >
-                        {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+                        {item.request_type === 'computer'
+                          ? 'COMPUTER'
+                          : 'EQUIPMENT'}
                       </span>
                     </div>
 
-                    <p className="mt-1 text-[13px] font-bold uppercase tracking-widest text-slate-400">
+                    <RequestNoBadge item={item} />
+
+                    <p className="mt-2 text-[13px] font-bold uppercase tracking-widest text-slate-400">
                       {getRequestSubtitle(item)}
                     </p>
 
                     <p className="mt-1 text-[13px] font-bold text-slate-500">
-                      วันที่ยืม: {item.borrow_date || 'ไม่ระบุ'}
+                      วันที่ยืม: {formatThaiDateTime(item.borrow_date)}
+                    </p>
+
+                    <p className="mt-1 text-[13px] font-bold text-slate-500">
+                      กำหนดคืน: {formatThaiDateTime(item.return_date)}
                     </p>
 
                     {item.reason && (
@@ -434,7 +486,9 @@ export default function MyBookingsPage() {
               <RotateCcw size={22} />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800">รายการที่แจ้งคืนแล้ว</h2>
+              <h2 className="text-lg font-black text-slate-800">
+                รายการที่แจ้งคืนแล้ว
+              </h2>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 รอแอดมินยืนยันรับคืน
               </p>
@@ -460,16 +514,20 @@ export default function MyBookingsPage() {
                             : 'bg-slate-100 text-slate-700'
                         }`}
                       >
-                        {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+                        {item.request_type === 'computer'
+                          ? 'COMPUTER'
+                          : 'EQUIPMENT'}
                       </span>
                     </div>
 
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <RequestNoBadge item={item} />
+
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       {getRequestSubtitle(item)}
                     </p>
 
                     <p className="mt-1 text-[13px] font-bold text-slate-500">
-                      วันที่กำหนดคืน: {item.return_date || 'ไม่ระบุ'}
+                      วันที่กำหนดคืน: {formatThaiDateTime(item.return_date)}
                     </p>
                   </div>
 
@@ -479,7 +537,9 @@ export default function MyBookingsPage() {
                 </div>
               ))
             ) : (
-              <p className="text-sm font-bold text-slate-400">ไม่มีรายการรอรับคืน</p>
+              <p className="text-sm font-bold text-slate-400">
+                ไม่มีรายการรอรับคืน
+              </p>
             )}
           </div>
         </div>
@@ -490,7 +550,9 @@ export default function MyBookingsPage() {
               <Clock size={22} />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800">ประวัติการคืนแล้ว</h2>
+              <h2 className="text-lg font-black text-slate-800">
+                ประวัติการคืนแล้ว
+              </h2>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 รายการที่แอดมินยืนยันรับคืนเรียบร้อย
               </p>
@@ -516,16 +578,20 @@ export default function MyBookingsPage() {
                             : 'bg-slate-100 text-slate-700'
                         }`}
                       >
-                        {item.request_type === 'computer' ? 'COMPUTER' : 'EQUIPMENT'}
+                        {item.request_type === 'computer'
+                          ? 'COMPUTER'
+                          : 'EQUIPMENT'}
                       </span>
                     </div>
 
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <RequestNoBadge item={item} />
+
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       {getRequestSubtitle(item)}
                     </p>
 
                     <p className="mt-1 text-[11px] font-bold text-slate-500">
-                      วันที่คืนสำเร็จ: {item.returned_at || 'ไม่ระบุ'}
+                      วันที่คืนสำเร็จ: {formatThaiDateTime(item.returned_at)}
                     </p>
                   </div>
 
@@ -535,7 +601,9 @@ export default function MyBookingsPage() {
                 </div>
               ))
             ) : (
-              <p className="text-sm font-bold text-slate-400">ยังไม่มีประวัติคืนรายการ</p>
+              <p className="text-sm font-bold text-slate-400">
+                ยังไม่มีประวัติคืนรายการ
+              </p>
             )}
           </div>
         </div>
@@ -566,7 +634,9 @@ export default function MyBookingsPage() {
               </div>
 
               <div className="flex-1">
-                <h3 className="text-sm font-black text-slate-800">{popup.title}</h3>
+                <h3 className="text-sm font-black text-slate-800">
+                  {popup.title}
+                </h3>
                 <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
                   {popup.message}
                 </p>
