@@ -85,7 +85,6 @@ export default function DashboardPage() {
     return (
       item.equipment?.code ||
       item.equipment?.equipment_code ||
-      item.equipment?.item_code ||
       item.item_code ||
       'ไม่มีรหัสอุปกรณ์'
     );
@@ -171,7 +170,6 @@ export default function DashboardPage() {
           category,
           code,
           equipment_code,
-          item_code,
           available_stock,
           status
         ),
