@@ -18,16 +18,15 @@ import {
   Eye,
   CalendarDays,
   User,
-  XCircle,
   Grid2X2,
-  ArrowDownToLine,
-  ArrowUpToLine,
+  Hourglass,
 } from 'lucide-react';
 
-type StatusFilter = 'all' | 'approved' | 'return_pending' | 'returned';
+type StatusFilter = 'all' | 'pending' | 'approved' | 'return_pending' | 'returned';
 type TypeFilter = 'all' | 'equipment' | 'computer';
 
 export default function MyBookingsPage() {
+  const [pendingBookings, setPendingBookings] = useState<any[]>([]);
   const [approvedBookings, setApprovedBookings] = useState<any[]>([]);
   const [returnPendingBookings, setReturnPendingBookings] = useState<any[]>([]);
   const [returnedBookings, setReturnedBookings] = useState<any[]>([]);
@@ -205,7 +204,7 @@ export default function MyBookingsPage() {
           user_email
         `)
         .eq('user_email', userEmail)
-        .in('status', ['approved', 'return_pending', 'returned'])
+        .in('status', ['pending', 'approved', 'return_pending', 'returned'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -274,6 +273,9 @@ export default function MyBookingsPage() {
             : null,
       }));
 
+      setPendingBookings(
+        mergedRows.filter((item) => item.status === 'pending')
+      );
       setApprovedBookings(
         mergedRows.filter((item) => item.status === 'approved')
       );
@@ -285,6 +287,7 @@ export default function MyBookingsPage() {
       );
     } catch (error: any) {
       console.error('fetchBookings error:', error.message);
+      setPendingBookings([]);
       setApprovedBookings([]);
       setReturnPendingBookings([]);
       setReturnedBookings([]);
@@ -330,6 +333,7 @@ export default function MyBookingsPage() {
   };
 
   const getStatusText = (status: string) => {
+    if (status === 'pending') return 'กำลังขอใช้งาน';
     if (status === 'approved') return 'กำลังใช้งาน';
     if (status === 'return_pending') return 'รอรับคืน';
     if (status === 'returned') return 'คืนแล้ว';
@@ -338,12 +342,16 @@ export default function MyBookingsPage() {
   };
 
   const getStatusStyle = (status: string) => {
+    if (status === 'pending') {
+      return 'bg-amber-50 text-amber-600 border-amber-100';
+    }
+
     if (status === 'approved') {
       return 'bg-blue-50 text-blue-600 border-blue-100';
     }
 
     if (status === 'return_pending') {
-      return 'bg-amber-50 text-amber-600 border-amber-100';
+      return 'bg-orange-50 text-orange-600 border-orange-100';
     }
 
     if (status === 'returned') {
@@ -354,8 +362,18 @@ export default function MyBookingsPage() {
   };
 
   const allBookings = useMemo(() => {
-    return [...approvedBookings, ...returnPendingBookings, ...returnedBookings];
-  }, [approvedBookings, returnPendingBookings, returnedBookings]);
+    return [
+      ...pendingBookings,
+      ...approvedBookings,
+      ...returnPendingBookings,
+      ...returnedBookings,
+    ];
+  }, [
+    pendingBookings,
+    approvedBookings,
+    returnPendingBookings,
+    returnedBookings,
+  ]);
 
   const filteredBookings = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -385,9 +403,16 @@ export default function MyBookingsPage() {
     });
   }, [allBookings, searchTerm, statusFilter, typeFilter]);
 
+  const activeBookings = useMemo(() => {
+    return allBookings.filter((item) =>
+      ['pending', 'approved', 'return_pending'].includes(item.status)
+    );
+  }, [allBookings]);
+
   const stats = useMemo(() => {
     return {
       all: allBookings.length,
+      pending: pendingBookings.length,
       approved: approvedBookings.length,
       returnPending: returnPendingBookings.length,
       returned: returnedBookings.length,
@@ -396,7 +421,13 @@ export default function MyBookingsPage() {
       computer: allBookings.filter((item) => item.request_type === 'computer')
         .length,
     };
-  }, [allBookings, approvedBookings, returnPendingBookings, returnedBookings]);
+  }, [
+    allBookings,
+    pendingBookings,
+    approvedBookings,
+    returnPendingBookings,
+    returnedBookings,
+  ]);
 
   const handleRequestReturn = async (item: any) => {
     try {
@@ -526,13 +557,15 @@ export default function MyBookingsPage() {
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-[150px] items-center gap-3 rounded-2xl border bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${
+      className={`flex min-w-[145px] items-center gap-3 rounded-2xl border bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${
         active
           ? 'border-blue-200 shadow-lg shadow-blue-100/50'
           : 'border-slate-100 shadow-sm'
       }`}
     >
-      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${color}`}>
+      <div
+        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${color}`}
+      >
         {icon}
       </div>
       <div>
@@ -542,30 +575,8 @@ export default function MyBookingsPage() {
     </button>
   );
 
-  const FilterButton = ({
-    active,
-    children,
-    onClick,
-  }: {
-    active: boolean;
-    children: React.ReactNode;
-    onClick: () => void;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-11 shrink-0 rounded-2xl border px-4 text-[12px] font-black transition-all ${
-        active
-          ? 'border-blue-100 bg-blue-50 text-blue-600 shadow-sm'
-          : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-600'
-      }`}
-    >
-      {children}
-    </button>
-  );
-
   const EmptyState = ({ text }: { text: string }) => (
-    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50/60 p-14 text-center">
+    <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
       <CheckCircle2 size={36} className="mx-auto mb-3 text-slate-300" />
       <p className="text-sm font-black italic text-slate-400">{text}</p>
     </div>
@@ -706,7 +717,7 @@ export default function MyBookingsPage() {
         </Link>
       }
     >
-      <div className="space-y-7 pb-20">
+      <div className="space-y-4 pb-20">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
             ประวัติการจองของฉัน
@@ -717,67 +728,17 @@ export default function MyBookingsPage() {
         </div>
 
         <div className="rounded-[2rem] border border-slate-100 bg-white p-4 shadow-xl shadow-slate-100/60 md:p-5">
-          <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr_1fr] xl:items-center">
-            <div className="relative">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-                size={18}
-              />
-              <input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="ค้นหาชื่ออุปกรณ์ / เลขคำขอ / รหัสรายการ..."
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
-              />
-            </div>
-
-            <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
-              <FilterButton
-                active={statusFilter === 'all'}
-                onClick={() => setStatusFilter('all')}
-              >
-                สถานะทั้งหมด
-              </FilterButton>
-              <FilterButton
-                active={statusFilter === 'approved'}
-                onClick={() => setStatusFilter('approved')}
-              >
-                กำลังใช้งาน
-              </FilterButton>
-              <FilterButton
-                active={statusFilter === 'return_pending'}
-                onClick={() => setStatusFilter('return_pending')}
-              >
-                รอรับคืน
-              </FilterButton>
-              <FilterButton
-                active={statusFilter === 'returned'}
-                onClick={() => setStatusFilter('returned')}
-              >
-                คืนแล้ว
-              </FilterButton>
-            </div>
-
-            <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
-              <FilterButton
-                active={typeFilter === 'all'}
-                onClick={() => setTypeFilter('all')}
-              >
-                ประเภททั้งหมด
-              </FilterButton>
-              <FilterButton
-                active={typeFilter === 'equipment'}
-                onClick={() => setTypeFilter('equipment')}
-              >
-                อุปกรณ์
-              </FilterButton>
-              <FilterButton
-                active={typeFilter === 'computer'}
-                onClick={() => setTypeFilter('computer')}
-              >
-                คอมพิวเตอร์
-              </FilterButton>
-            </div>
+          <div className="relative">
+            <Search
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+              size={18}
+            />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="ค้นหาชื่ออุปกรณ์ / เลขคำขอ / รหัสรายการ..."
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-50"
+            />
           </div>
         </div>
 
@@ -789,6 +750,14 @@ export default function MyBookingsPage() {
             active={statusFilter === 'all'}
             onClick={() => setStatusFilter('all')}
             color="bg-blue-50 text-blue-600"
+          />
+          <StatusCard
+            icon={<Hourglass size={22} />}
+            title="กำลังขอใช้งาน"
+            value={stats.pending}
+            active={statusFilter === 'pending'}
+            onClick={() => setStatusFilter('pending')}
+            color="bg-amber-50 text-amber-600"
           />
           <StatusCard
             icon={<Clock size={22} />}
@@ -804,7 +773,7 @@ export default function MyBookingsPage() {
             value={stats.returnPending}
             active={statusFilter === 'return_pending'}
             onClick={() => setStatusFilter('return_pending')}
-            color="bg-amber-50 text-amber-600"
+            color="bg-orange-50 text-orange-600"
           />
           <StatusCard
             icon={<CheckCircle2 size={22} />}
@@ -819,7 +788,9 @@ export default function MyBookingsPage() {
             title="อุปกรณ์"
             value={stats.equipment}
             active={typeFilter === 'equipment'}
-            onClick={() => setTypeFilter('equipment')}
+            onClick={() =>
+              setTypeFilter(typeFilter === 'equipment' ? 'all' : 'equipment')
+            }
             color="bg-indigo-50 text-indigo-600"
           />
           <StatusCard
@@ -827,12 +798,39 @@ export default function MyBookingsPage() {
             title="คอมพิวเตอร์"
             value={stats.computer}
             active={typeFilter === 'computer'}
-            onClick={() => setTypeFilter('computer')}
+            onClick={() =>
+              setTypeFilter(typeFilter === 'computer' ? 'all' : 'computer')
+            }
             color="bg-sky-50 text-sky-600"
           />
         </div>
 
-        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+        {activeBookings.length > 0 && (
+          <div className="rounded-[2rem] border border-blue-100 bg-gradient-to-r from-blue-50 to-white p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                <Clock size={22} />
+              </div>
+
+              <div>
+                <h2 className="text-base font-black text-slate-900">
+                  รายการที่ผู้ใช้กำลังขอ/ใช้งานอยู่
+                </h2>
+                <p className="mt-1 text-sm font-bold leading-relaxed text-slate-500">
+                  ขณะนี้มีรายการที่ยังดำเนินการอยู่ {activeBookings.length}{' '}
+                  รายการ ได้แก่{' '}
+                  {activeBookings
+                    .slice(0, 3)
+                    .map((item) => getRequestTitle(item))
+                    .join(', ')}
+                  {activeBookings.length > 3 ? ' และรายการอื่น ๆ' : ''}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col justify-between gap-3 pt-1 md:flex-row md:items-center">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 rounded-full bg-blue-600"></span>
             <h2 className="text-xl font-black text-slate-900">
