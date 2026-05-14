@@ -16,6 +16,7 @@ import {
 
 type Booking = {
   id: string;
+  request_no?: string | null;
   item_name?: string | null;
   item_code?: string | null;
   user_name?: string | null;
@@ -76,6 +77,16 @@ export default function DashboardPage() {
     return item.equipment?.category || item.item_code || 'EQUIPMENT';
   };
 
+  const getRequestNo = (item: Booking) => {
+    return item.request_no || 'ยังไม่มีเลขคำขอ';
+  };
+
+  const RequestNoBadge = ({ item }: { item: Booking }) => (
+    <div className="mt-1 inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
+      เลขคำขอยืม: {getRequestNo(item)}
+    </div>
+  );
+
   const isPendingStatus = (status?: string | null) => {
     if (!status) return false;
     return PENDING_STATUSES.includes(status);
@@ -116,6 +127,7 @@ export default function DashboardPage() {
 
       const baseSelect = `
         id,
+        request_no,
         user_name,
         user_email,
         borrow_date,
@@ -368,6 +380,8 @@ export default function DashboardPage() {
                               )}
                             </div>
 
+                            <RequestNoBadge item={b} />
+
                             <p className="text-xs font-bold text-slate-500">
                               ผู้จอง: {getUserDisplayName(b)}
                             </p>
@@ -447,6 +461,8 @@ export default function DashboardPage() {
                               </span>
                             )}
                           </div>
+
+                          <RequestNoBadge item={req} />
 
                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                             {getItemCode(req)}
