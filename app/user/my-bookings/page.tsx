@@ -18,10 +18,15 @@ import {
   Eye,
   CalendarDays,
   User,
-  Hourglass,
 } from 'lucide-react';
 
-type StatusFilter = 'all' | 'pending' | 'approved' | 'return_pending' | 'returned';
+type StatusFilter =
+  | 'all'
+  | 'pending'
+  | 'approved'
+  | 'return_pending'
+  | 'returned';
+
 type TypeFilter = 'all' | 'equipment' | 'computer';
 
 export default function MyBookingsPage() {
@@ -408,26 +413,6 @@ export default function MyBookingsPage() {
     );
   }, [allBookings]);
 
-  const stats = useMemo(() => {
-    return {
-      all: allBookings.length,
-      pending: pendingBookings.length,
-      approved: approvedBookings.length,
-      returnPending: returnPendingBookings.length,
-      returned: returnedBookings.length,
-      equipment: allBookings.filter((item) => item.request_type === 'equipment')
-        .length,
-      computer: allBookings.filter((item) => item.request_type === 'computer')
-        .length,
-    };
-  }, [
-    allBookings,
-    pendingBookings,
-    approvedBookings,
-    returnPendingBookings,
-    returnedBookings,
-  ]);
-
   const handleRequestReturn = async (item: any) => {
     try {
       const { error } = await supabase
@@ -664,25 +649,25 @@ export default function MyBookingsPage() {
             {getStatusText(item.status)}
           </span>
 
-          <div className="grid w-full grid-cols-1 gap-2 lg:max-w-[220px]">
+          <div className="flex w-full flex-col items-end gap-3 lg:max-w-[220px]">
             <Button
-  className="flex h-10 w-fit items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-5 text-[12px] font-black !text-white shadow-sm transition-all hover:border-blue-200 hover:bg-blue-100"
-  onClick={() => {
-    setSelected(item);
-    setDetailOpen(true);
-  }}
->
-  <Eye size={15} />
-  <span>ดูรายละเอียด</span>
-</Button>
+              className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-[12px] font-black text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700"
+              onClick={() => {
+                setSelected(item);
+                setDetailOpen(true);
+              }}
+            >
+              <Eye size={15} />
+              <span>ดูรายละเอียด</span>
+            </Button>
 
             {item.status === 'approved' && (
               <Button
-                className="h-12 rounded-2xl bg-red-500 px-4 text-xs font-black text-white shadow-lg shadow-red-100 hover:bg-red-600"
+                className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
                 onClick={() => handleRequestReturn(item)}
               >
-                <RotateCcw size={16} className="mr-2" />
-                {getRequestButtonText(item)}
+                <RotateCcw size={15} />
+                <span>{getRequestButtonText(item)}</span>
               </Button>
             )}
           </div>
@@ -727,7 +712,7 @@ export default function MyBookingsPage() {
               />
             </div>
 
-            <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-2">
               <FilterButton
                 active={statusFilter === 'all'}
                 onClick={() => setStatusFilter('all')}
@@ -760,7 +745,7 @@ export default function MyBookingsPage() {
               </FilterButton>
             </div>
 
-            <div className="flex min-w-0 gap-2 overflow-x-auto pb-1 xl:justify-end">
+            <div className="flex flex-wrap gap-2 xl:justify-end">
               <FilterButton
                 active={typeFilter === 'all'}
                 onClick={() => setTypeFilter('all')}
@@ -911,14 +896,14 @@ export default function MyBookingsPage() {
 
             {selected.status === 'approved' && (
               <Button
-                className="w-full rounded-2xl bg-red-500 py-4 text-sm font-black text-white shadow-lg shadow-red-100"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 py-4 text-sm font-black text-white shadow-lg shadow-red-100"
                 onClick={() => {
                   setDetailOpen(false);
                   handleRequestReturn(selected);
                 }}
               >
-                <RotateCcw size={17} className="mr-2" />
-                {getRequestButtonText(selected)}
+                <RotateCcw size={17} />
+                <span>{getRequestButtonText(selected)}</span>
               </Button>
             )}
           </div>
@@ -961,17 +946,6 @@ export default function MyBookingsPage() {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </DashboardLayout>
   );
 }
