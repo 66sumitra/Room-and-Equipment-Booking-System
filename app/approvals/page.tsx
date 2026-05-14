@@ -75,6 +75,7 @@ export default function ApprovalsPage() {
 
       const baseSelect = `
         id,
+        request_no,
         user_name,
         user_email,
         borrow_date,
@@ -187,6 +188,10 @@ export default function ApprovalsPage() {
     return req?.request_type === 'computer' ? 'คอมพิวเตอร์' : 'อุปกรณ์';
   };
 
+  const getRequestNo = (req: any) => {
+    return req?.request_no || 'ยังไม่มีเลขคำขอ';
+  };
+
   const getAvailabilityText = (req: any) => {
     if (req?.request_type === 'computer') {
       return req.computers?.status === 'available' ? 'ว่าง' : 'ไม่ว่าง';
@@ -194,6 +199,24 @@ export default function ApprovalsPage() {
 
     return `คงเหลือ ${req.equipment?.available_stock ?? 0}`;
   };
+
+  const formatThaiDateTime = (dateTime: string | null | undefined) => {
+    if (!dateTime) return 'ไม่ระบุ';
+
+    return new Date(dateTime).toLocaleString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const RequestNoBadge = ({ req }: { req: any }) => (
+    <div className="mt-2 inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
+      เลขคำขอยืม: {getRequestNo(req)}
+    </div>
+  );
 
   const addNotification = async (
     userEmail: string | null,
@@ -256,16 +279,21 @@ export default function ApprovalsPage() {
         data: { session },
       } = await supabase.auth.getSession();
 
+      const requestNo = getRequestNo(selected);
+      const itemName = getRequestTitle(selected);
+      const itemTypeText = getRequestTypeLabel(selected);
+      const itemSubtitle = getRequestSubtitle(selected);
+
       if (actionType === 'approve') {
         const title = 'คำขอได้รับการอนุมัติ';
         const message =
           selected.request_type === 'computer'
             ? `คำขอใช้งาน ${
                 selected.computers?.pc_name || 'คอมพิวเตอร์'
-              } ของคุณได้รับการอนุมัติแล้ว`
+              } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo}`
             : `คำขอยืม ${
                 selected.equipment?.name || 'อุปกรณ์'
-              } ของคุณได้รับการอนุมัติแล้ว`;
+              } ของคุณได้รับการอนุมัติแล้ว เลขคำขอยืม ${requestNo}`;
 
         if (selected.request_type === 'computer') {
           const { data: computerData, error: computerFetchError } =
@@ -351,7 +379,27 @@ export default function ApprovalsPage() {
           'approved',
           selected.id
         );
-        await sendEmail(selected.user_email, title, message);
+
+        await sendEmail(
+          selected.user_email,
+          title,
+          `เรียน คุณ${selected.user_name || selected.user_email || 'ผู้ใช้งาน'}
+
+ระบบขอแจ้งให้ทราบว่า คำขอของท่านได้รับการอนุมัติเรียบร้อยแล้ว
+
+รายละเอียดคำขอ
+เลขคำขอยืม: ${requestNo}
+ประเภทคำขอ: ${itemTypeText}
+รายการ: ${itemName}
+รายละเอียด: ${itemSubtitle}
+วันที่เริ่มยืม: ${formatThaiDateTime(selected.borrow_date)}
+วันที่กำหนดคืน: ${formatThaiDateTime(selected.return_date)}
+
+กรุณาคืนรายการดังกล่าวภายในวันและเวลาที่กำหนด เพื่อให้เป็นไปตามระเบียบการยืม–คืนของหน่วยงาน
+
+ขอแสดงความนับถือ
+ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
+        );
 
         setSuccessMsg('อนุมัติคำขอเรียบร้อยแล้ว');
       }
@@ -369,10 +417,10 @@ export default function ApprovalsPage() {
           selected.request_type === 'computer'
             ? `คำขอใช้งาน ${
                 selected.computers?.pc_name || 'คอมพิวเตอร์'
-              } ของคุณไม่ได้รับการอนุมัติ เนื่องจาก ${finalRejectReason}`
+              } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} เนื่องจาก ${finalRejectReason}`
             : `คำขอยืม ${
                 selected.equipment?.name || 'อุปกรณ์'
-              } ของคุณไม่ได้รับการอนุมัติ เนื่องจาก ${finalRejectReason}`;
+              } ของคุณไม่ได้รับการอนุมัติ เลขคำขอยืม ${requestNo} เนื่องจาก ${finalRejectReason}`;
 
         const { error: reqError } = await supabase
           .from('borrow_requests')
@@ -394,7 +442,28 @@ export default function ApprovalsPage() {
           'rejected',
           selected.id
         );
-        await sendEmail(selected.user_email, title, message);
+
+        await sendEmail(
+          selected.user_email,
+          title,
+          `เรียน คุณ${selected.user_name || selected.user_email || 'ผู้ใช้งาน'}
+
+ระบบขอแจ้งให้ทราบว่า คำขอของท่านไม่ได้รับการอนุมัติ
+
+รายละเอียดคำขอ
+เลขคำขอยืม: ${requestNo}
+ประเภทคำขอ: ${itemTypeText}
+รายการ: ${itemName}
+รายละเอียด: ${itemSubtitle}
+วันที่เริ่มยืม: ${formatThaiDateTime(selected.borrow_date)}
+วันที่กำหนดคืน: ${formatThaiDateTime(selected.return_date)}
+เหตุผลการปฏิเสธ: ${finalRejectReason}
+
+กรุณาตรวจสอบข้อมูลและดำเนินการส่งคำขอใหม่อีกครั้ง หากต้องการใช้งานรายการดังกล่าว
+
+ขอแสดงความนับถือ
+ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
+        );
 
         setSuccessMsg('ปฏิเสธคำขอแล้ว');
       }
@@ -405,10 +474,10 @@ export default function ApprovalsPage() {
           selected.request_type === 'computer'
             ? `แอดมินยืนยันรับคืน ${
                 selected.computers?.pc_name || 'คอมพิวเตอร์'
-              } เรียบร้อยแล้ว`
+              } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo}`
             : `แอดมินยืนยันรับคืน ${
                 selected.equipment?.name || 'อุปกรณ์'
-              } เรียบร้อยแล้ว`;
+              } เรียบร้อยแล้ว เลขคำขอยืม ${requestNo}`;
 
         const { error: reqError } = await supabase
           .from('borrow_requests')
@@ -457,7 +526,26 @@ export default function ApprovalsPage() {
           'returned',
           selected.id
         );
-        await sendEmail(selected.user_email, title, message);
+
+        await sendEmail(
+          selected.user_email,
+          title,
+          `เรียน คุณ${selected.user_name || selected.user_email || 'ผู้ใช้งาน'}
+
+ระบบขอแจ้งให้ทราบว่า เจ้าหน้าที่ได้ยืนยันการรับคืนรายการของท่านเรียบร้อยแล้ว
+
+รายละเอียดการคืน
+เลขคำขอยืม: ${requestNo}
+ประเภทคำขอ: ${itemTypeText}
+รายการ: ${itemName}
+รายละเอียด: ${itemSubtitle}
+วันที่ยืนยันรับคืน: ${formatThaiDateTime(new Date().toISOString())}
+
+ขอขอบคุณที่ดำเนินการคืนรายการตามขั้นตอนของหน่วยงาน
+
+ขอแสดงความนับถือ
+ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
+        );
 
         setSuccessMsg('ยืนยันรับคืนเรียบร้อยแล้ว');
       }
@@ -507,8 +595,8 @@ export default function ApprovalsPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white text-black shadow-xl shadow-slate-100/50">
-          <table className="w-full border-collapse">
+        <div className="overflow-x-auto rounded-[2.5rem] border border-slate-100 bg-white text-black shadow-xl shadow-slate-100/50">
+          <table className="w-full min-w-[900px] border-collapse">
             <thead className="bg-slate-800 text-[11px] font-black uppercase tracking-[0.2em] text-white">
               <tr>
                 <th className="px-10 py-5 text-left">รายละเอียดคำขอ</th>
@@ -555,6 +643,8 @@ export default function ApprovalsPage() {
                       )}
                     </div>
 
+                    <RequestNoBadge req={req} />
+
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-tighter text-slate-400">
                       {getRequestSubtitle(req)}
                     </p>
@@ -574,7 +664,7 @@ export default function ApprovalsPage() {
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400">
                         <Clock size={12} className="text-slate-200" />
-                        {req.borrow_date || 'ไม่ระบุวัน'}
+                        {formatThaiDateTime(req.borrow_date)}
                       </div>
                       <div className="text-[10px] font-bold text-slate-400">
                         ประเภท: {getRequestTypeLabel(req)}
@@ -642,8 +732,8 @@ export default function ApprovalsPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white text-black shadow-xl shadow-slate-100/50">
-          <table className="w-full border-collapse">
+        <div className="overflow-x-auto rounded-[2.5rem] border border-slate-100 bg-white text-black shadow-xl shadow-slate-100/50">
+          <table className="w-full min-w-[900px] border-collapse">
             <thead className="bg-amber-500 text-[12px] font-black uppercase tracking-[0.2em] text-white">
               <tr>
                 <th className="px-10 py-5 text-left">รายละเอียดคำขอ</th>
@@ -676,6 +766,8 @@ export default function ApprovalsPage() {
                       </span>
                     </div>
 
+                    <RequestNoBadge req={req} />
+
                     <p className="mt-1 text-[12px] font-bold uppercase tracking-tighter text-slate-400">
                       {getRequestSubtitle(req)}
                     </p>
@@ -689,7 +781,7 @@ export default function ApprovalsPage() {
                       </div>
                       <div className="flex items-center gap-2 text-[12px] text-slate-400">
                         <Clock size={12} className="text-slate-200" />
-                        {req.return_date || 'ไม่ระบุวันคืน'}
+                        {formatThaiDateTime(req.return_date)}
                       </div>
                     </div>
                   </td>
@@ -785,10 +877,21 @@ export default function ApprovalsPage() {
                   <p className="mt-1 text-xs font-bold text-slate-400">
                     {getRequestSubtitle(selected)}
                   </p>
+
+                  <RequestNoBadge req={selected} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-5">
+                <div>
+                  <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                    เลขคำขอยืม
+                  </p>
+                  <p className="text-sm font-bold text-blue-700">
+                    {getRequestNo(selected)}
+                  </p>
+                </div>
+
                 <div>
                   <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
                     ประเภทคำขอ
@@ -822,6 +925,24 @@ export default function ApprovalsPage() {
 
                 <div>
                   <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                    วันที่เริ่มยืม
+                  </p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {formatThaiDateTime(selected.borrow_date)}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                    วันที่กำหนดคืน
+                  </p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {formatThaiDateTime(selected.return_date)}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
                     {selected.request_type === 'computer'
                       ? 'ห้อง / ตำแหน่ง'
                       : 'หมวดหมู่'}
@@ -831,7 +952,7 @@ export default function ApprovalsPage() {
                   </p>
                 </div>
 
-                <div className="md:col-span-2">
+                <div>
                   <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
                     สถานะปัจจุบัน
                   </p>
@@ -892,6 +1013,12 @@ export default function ApprovalsPage() {
               <RotateCcw size={40} className="text-amber-500" />
             )}
           </div>
+
+          {selected && (
+            <div className="mb-3 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">
+              เลขคำขอยืม: {getRequestNo(selected)}
+            </div>
+          )}
 
           <h3 className="mb-2 text-xl font-black text-slate-800">
             {actionType === 'approve'
