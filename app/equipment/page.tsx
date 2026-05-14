@@ -103,14 +103,104 @@ export default function AdminEquipmentPage() {
     }
   };
 
+  const getCodePrefix = (name: string, category: string) => {
+    const text = `${name} ${category}`.toLowerCase();
+
+    if (
+      text.includes('function') ||
+      text.includes('generator') ||
+      text.includes('สัญญาณ')
+    ) {
+      return 'FG';
+    }
+
+    if (
+      text.includes('power') ||
+      text.includes('supply') ||
+      text.includes('แหล่งจ่าย') ||
+      text.includes('จ่ายไฟ')
+    ) {
+      return 'PSU';
+    }
+
+    if (
+      text.includes('digital') ||
+      text.includes('experiment') ||
+      text.includes('board') ||
+      text.includes('บอร์ด') ||
+      text.includes('ทดลอง')
+    ) {
+      return 'DEB';
+    }
+
+    if (
+      text.includes('multimeter') ||
+      text.includes('meter') ||
+      text.includes('มิเตอร์') ||
+      text.includes('วัดไฟ')
+    ) {
+      return 'DM';
+    }
+
+    if (
+      text.includes('lead') ||
+      text.includes('cable') ||
+      text.includes('สาย') ||
+      text.includes('สายวัด')
+    ) {
+      return 'TL';
+    }
+
+    if (
+      text.includes('circuit') ||
+      text.includes('วงจร') ||
+      text.includes('ไฟฟ้า')
+    ) {
+      return 'EB';
+    }
+
+    const source = category.trim() || name.trim();
+
+    if (!source) return 'EQ';
+
+    const english = source
+      .replace(/[^a-zA-Z]/g, '')
+      .slice(0, 3)
+      .toUpperCase();
+
+    if (english.length >= 2) return english.padEnd(3, 'X');
+
+    return 'EQ';
+  };
+
+  const generateEquipmentCode = async (name: string, category: string) => {
+    const prefix = getCodePrefix(name, category);
+
+    const { data, error } = await supabase
+      .from('equipment')
+      .select('code')
+      .ilike('code', `${prefix}-%`);
+
+    if (error) throw error;
+
+    const maxNumber = (data || []).reduce((max, item) => {
+      const code = item.code || '';
+      const match = code.match(new RegExp(`^${prefix}-(\\d+)$`));
+
+      if (!match) return max;
+
+      const number = Number(match[1]);
+      return Number.isNaN(number) ? max : Math.max(max, number);
+    }, 0);
+
+    const nextNumber = String(maxNumber + 1).padStart(3, '0');
+
+    return `${prefix}-${nextNumber}`;
+  };
+
   const validateForm = () => {
     if (!formData.name.trim()) {
       openWarning('กรุณากรอกชื่ออุปกรณ์');
-      return false;
-    }
-
-    if (!formData.code.trim()) {
-      openWarning('กรุณากรอกรหัสอุปกรณ์');
       return false;
     }
 
@@ -161,9 +251,18 @@ export default function AdminEquipmentPage() {
         finalImageUrl = urlData.publicUrl;
       }
 
+      const finalCode =
+        modalMode === 'add'
+          ? await generateEquipmentCode(formData.name.trim(), formData.category.trim())
+          : formData.code.trim() ||
+            (await generateEquipmentCode(
+              formData.name.trim(),
+              formData.category.trim()
+            ));
+
       const payload = {
         name: formData.name.trim(),
-        code: formData.code.trim(),
+        code: finalCode,
         category: formData.category.trim(),
         total_stock: formData.total_stock,
         available_stock: formData.available_stock,
@@ -175,7 +274,7 @@ export default function AdminEquipmentPage() {
       if (modalMode === 'add') {
         const { error } = await supabase.from('equipment').insert([payload]);
         if (error) throw error;
-        openSuccess('เพิ่มอุปกรณ์ใหม่เรียบร้อยแล้ว');
+        openSuccess(`เพิ่มอุปกรณ์ใหม่เรียบร้อยแล้ว รหัสอุปกรณ์คือ ${finalCode}`);
       } else {
         const { error } = await supabase
           .from('equipment')
@@ -281,10 +380,10 @@ export default function AdminEquipmentPage() {
                     <p className="line-clamp-3 text-xl font-black leading-snug text-slate-800">
                       {item.name}
                     </p>
-                    <p className="mt-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <p className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-blue-600">
                       {item.code || 'ไม่มีรหัส'}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-blue-500">
+                    <p className="mt-2 text-xs font-bold text-blue-500">
                       {item.category || 'ไม่ระบุหมวดหมู่'}
                     </p>
                   </div>
@@ -386,9 +485,14 @@ export default function AdminEquipmentPage() {
 
                   <td className="px-6 py-4">
                     <p className="font-black text-slate-800">{item.name}</p>
-                    <p className="text-[10px] font-bold uppercase text-gray-400">
-                      {item.code} | {item.category}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-black uppercase text-blue-600">
+                        {item.code || 'ไม่มีรหัส'}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase text-gray-400">
+                        {item.category || 'ไม่ระบุหมวดหมู่'}
+                      </span>
+                    </div>
                   </td>
 
                   <td className="px-6 py-4 text-center font-black">
@@ -490,13 +594,21 @@ export default function AdminEquipmentPage() {
               }
             />
 
-            <Input
-              label="รหัสอุปกรณ์ (Code)"
-              value={formData.code}
-              onChange={(e: any) =>
-                setFormData({ ...formData, code: e.target.value })
-              }
-            />
+            <div>
+              <label className="mb-2 block text-sm font-black text-slate-700">
+                รหัสอุปกรณ์
+              </label>
+
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">
+                {modalMode === 'add'
+                  ? 'ระบบจะสร้างรหัสให้อัตโนมัติหลังบันทึก'
+                  : formData.code || 'ยังไม่มีรหัส'}
+              </div>
+
+              <p className="mt-1 text-[11px] font-bold text-slate-400">
+                ตัวอย่างรหัส: FG-001, PSU-001, DM-001
+              </p>
+            </div>
           </div>
 
           <Input
