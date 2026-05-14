@@ -85,6 +85,10 @@ function generateRequestNo() {
   return `BR-${year}${month}${day}-${timePart}${randomPart}`;
 }
 
+function getEquipmentCode(item: any) {
+  return item?.code || item?.equipment_code || item?.item_code || 'ไม่มีรหัสอุปกรณ์';
+}
+
 function DateTimeField({
   label,
   type,
@@ -574,10 +578,12 @@ export default function BookingPage() {
   const filteredEquipment = equipment.filter((item) => {
     const itemName = item.name?.toLowerCase?.() || '';
     const itemCategory = item.category?.toLowerCase?.() || '';
+    const itemCode = getEquipmentCode(item).toLowerCase();
 
     const matchesSearch =
       itemName.includes(searchTerm.toLowerCase()) ||
-      itemCategory.includes(searchTerm.toLowerCase());
+      itemCategory.includes(searchTerm.toLowerCase()) ||
+      itemCode.includes(searchTerm.toLowerCase());
 
     const matchesCategory =
       selectedCategory === 'all' || item.category === selectedCategory;
@@ -636,6 +642,7 @@ export default function BookingPage() {
 
     const borrowerName = currentUserName || currentUserEmail || 'ผู้ใช้งาน';
     const requestNo = generateRequestNo();
+    const equipmentCode = getEquipmentCode(selected);
 
     const { data: insertedRequest, error: insertError } = await supabase
       .from('borrow_requests')
@@ -674,7 +681,7 @@ export default function BookingPage() {
         adminList.map((admin) => ({
           user_email: admin.email,
           title: form.urgent ? 'มีคำขอด่วนใหม่' : 'มีคำขอใหม่',
-          message: `${borrowerName} ได้ส่งคำขอยืม ${selected.name} เลขคำขอ ${requestNo}`,
+          message: `${borrowerName} ได้ส่งคำขอยืม ${selected.name} รหัสอุปกรณ์ ${equipmentCode} เลขคำขอ ${requestNo}`,
           type: form.urgent ? 'urgent_request' : 'new_request',
           related_request_id: insertedRequest.id,
         }))
@@ -689,9 +696,11 @@ export default function BookingPage() {
 
 รายละเอียดคำขอ
 เลขคำขอยืม: ${requestNo}
+รหัสอุปกรณ์: ${equipmentCode}
 ผู้ขอยืม: ${borrowerName}
 อีเมลผู้ขอยืม: ${currentUserEmail}
 อุปกรณ์: ${selected.name}
+หมวดหมู่: ${selected.category || 'ไม่ระบุ'}
 วันที่เริ่มยืม: ${formatThaiDateTime(borrowDateTime)}
 วันที่คืน: ${formatThaiDateTime(returnDateTime)}
 เหตุผล: ${form.reason.trim()}
@@ -767,7 +776,7 @@ export default function BookingPage() {
               />
               <input
                 type="text"
-                placeholder="ค้นหาชื่ออุปกรณ์..."
+                placeholder="ค้นหาชื่ออุปกรณ์ / รหัสอุปกรณ์..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-13 w-full border-none bg-transparent py-4 pl-12 pr-4 text-base font-bold text-slate-700 outline-none placeholder:text-slate-300"
@@ -860,6 +869,11 @@ export default function BookingPage() {
                     <span className="mb-2 block text-[11px] font-black uppercase tracking-widest text-blue-500">
                       {item.category}
                     </span>
+
+                    <div className="mb-3 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-black uppercase text-blue-700">
+                      รหัสอุปกรณ์: {getEquipmentCode(item)}
+                    </div>
+
                     <h3 className="line-clamp-2 text-2xl font-black leading-tight text-slate-800 transition-colors group-hover:text-blue-600 md:text-xl">
                       {item.name}
                     </h3>
@@ -933,6 +947,10 @@ export default function BookingPage() {
                   <h2 className="mt-2 line-clamp-3 text-[23px] font-black leading-snug">
                     {selected?.name || 'อุปกรณ์'}
                   </h2>
+
+                  <div className="mt-3 inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-black text-white">
+                    รหัสอุปกรณ์: {getEquipmentCode(selected)}
+                  </div>
 
                   <p className="mt-3 text-xs font-bold text-white/85">
                     กรุณากรอกวัน เวลา และเหตุผลการยืมให้ครบถ้วน
