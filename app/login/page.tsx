@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Lock, User, ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -11,12 +11,111 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
   const [forgotError, setForgotError] = useState("");
+
+  const getUserName = (user: any) => {
+    return (
+      user?.user_metadata?.full_name ||
+      user?.user_metadata?.name ||
+      user?.email?.split("@")[0] ||
+      "ผู้ใช้งาน"
+    );
+  };
+
+  const redirectByRole = async (user: any) => {
+    const userEmail = user?.email || "";
+    const userName = getUserName(user);
+
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("id, role, email_verified")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      setError("ไม่สามารถตรวจสอบข้อมูลผู้ใช้ได้");
+      return;
+    }
+
+    if (!profile) {
+      const { error: insertError } = await supabase.from("users").insert([
+        {
+          id: user.id,
+          name: userName,
+          email: userEmail,
+          role: "user",
+          email_verified: true,
+        },
+      ]);
+
+      if (insertError) {
+        console.error("Create Google user profile error:", insertError);
+        setError("เข้าสู่ระบบด้วย Google สำเร็จ แต่สร้างข้อมูลผู้ใช้ไม่สำเร็จ");
+        return;
+      }
+
+      window.location.href = "/user/booking";
+      return;
+    }
+
+    if (!profile.email_verified) {
+      await supabase
+        .from("users")
+        .update({ email_verified: true })
+        .eq("id", user.id);
+    }
+
+    const target = profile.role === "admin" ? "/dashboard" : "/user/booking";
+    window.location.href = target;
+  };
+
+  useEffect(() => {
+    const handleGoogleCallback = async () => {
+      if (typeof window === "undefined") return;
+
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+
+      if (!code) return;
+
+      setGoogleLoading(true);
+      setError("");
+
+      try {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+        window.history.replaceState({}, document.title, "/login");
+
+        if (error) {
+          setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ: " + error.message);
+          return;
+        }
+
+        const session =
+          data.session || (await supabase.auth.getSession()).data.session;
+
+        if (!session?.user) {
+          setError("เข้าสู่ระบบด้วย Google สำเร็จ แต่ไม่พบ session");
+          return;
+        }
+
+        await redirectByRole(session.user);
+      } catch (err: any) {
+        console.error("Google callback error:", err);
+        setError(err?.message || "เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    handleGoogleCallback();
+  }, []);
 
   const openForgotPassword = () => {
     setForgotEmail(email || "");
@@ -54,6 +153,35 @@ export default function LoginPage() {
       setForgotError(err?.message || "เกิดข้อผิดพลาดในการส่งลิงก์");
     } finally {
       setForgotLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (googleLoading || loading) return;
+
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (error) {
+        setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ: " + error.message);
+        setGoogleLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError(err?.message || "เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+      setGoogleLoading(false);
     }
   };
 
@@ -150,7 +278,7 @@ export default function LoginPage() {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
+                    disabled={loading || googleLoading}
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
                     required
                   />
@@ -171,7 +299,7 @@ export default function LoginPage() {
                     placeholder="รหัสผ่าน"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
+                    disabled={loading || googleLoading}
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
                     required
                   />
@@ -181,7 +309,8 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={openForgotPassword}
-                    className="text-xs font-bold text-blue-600 hover:underline"
+                    disabled={loading || googleLoading}
+                    className="text-xs font-bold text-blue-600 hover:underline disabled:opacity-60"
                   >
                     ลืมรหัสผ่าน?
                   </button>
@@ -190,7 +319,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || googleLoading}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
@@ -198,8 +327,27 @@ export default function LoginPage() {
               </button>
             </form>
 
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs font-bold text-gray-400">หรือ</span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading || googleLoading}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-black text-blue-600">
+                G
+              </span>
+              {googleLoading
+                ? "กำลังเข้าสู่ระบบด้วย Google..."
+                : "เข้าสู่ระบบด้วย Google"}
+            </button>
+
             <div className="mt-8 space-y-4 text-center">
-              <p className="text-xs font-bold text-gray-400">หรือ</p>
               <p className="text-sm font-medium text-gray-600">
                 ยังไม่มีบัญชี?{" "}
                 <Link
