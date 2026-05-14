@@ -46,30 +46,74 @@ function formatThaiDateTime(dateTime: string | null | undefined) {
   });
 }
 
-function getReminderTime(borrowDate: string, returnDate: string) {
+function formatThaiDateOnly(date: Date | null) {
+  if (!date) return 'ไม่ระบุ';
+
+  return date.toLocaleDateString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function getBangkokDateParts(date: Date) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const parts = formatter.formatToParts(date);
+
+  const year = parts.find((p) => p.type === 'year')?.value || '';
+  const month = parts.find((p) => p.type === 'month')?.value || '';
+  const day = parts.find((p) => p.type === 'day')?.value || '';
+
+  return { year, month, day };
+}
+
+function createBangkokDateTime(year: string, month: string, day: string, hour: string, minute: string) {
+  return new Date(`${year}-${month}-${day}T${hour}:${minute}:00+07:00`);
+}
+
+function getDayBeforeMorningTime(returnDate: string) {
+  const returnAt = parseDateTime(returnDate);
+  if (!returnAt) return null;
+
+  const { year, month, day } = getBangkokDateParts(returnAt);
+  const returnDayMorning = createBangkokDateTime(year, month, day, '08', '00');
+
+  return new Date(returnDayMorning.getTime() - 24 * 60 * 60 * 1000);
+}
+
+function getDueDayMorningTime(returnDate: string) {
+  const returnAt = parseDateTime(returnDate);
+  if (!returnAt) return null;
+
+  const { year, month, day } = getBangkokDateParts(returnAt);
+
+  return createBangkokDateTime(year, month, day, '08', '00');
+}
+
+function isMultiDayBorrow(borrowDate: string | null | undefined, returnDate: string | null | undefined) {
   const borrowAt = parseDateTime(borrowDate);
   const returnAt = parseDateTime(returnDate);
 
-  if (!borrowAt || !returnAt) return null;
+  if (!borrowAt || !returnAt) return false;
 
   const durationMs = returnAt.getTime() - borrowAt.getTime();
   const oneDayMs = 24 * 60 * 60 * 1000;
 
-  // ถ้ายืมหลายวัน แจ้งก่อน 1 วัน เวลา 08:00 น.
-  if (durationMs > oneDayMs) {
-    const returnText = returnDate.replace(' ', 'T').slice(0, 10);
-    const returnDay = new Date(`${returnText}T00:00:00+07:00`);
+  return durationMs > oneDayMs;
+}
 
-    returnDay.setDate(returnDay.getDate() - 1);
+function getShortBorrowReminderTime(returnDate: string | null | undefined) {
+  const returnAt = parseDateTime(returnDate);
 
-    const year = returnDay.getFullYear();
-    const month = String(returnDay.getMonth() + 1).padStart(2, '0');
-    const day = String(returnDay.getDate()).padStart(2, '0');
+  if (!returnAt) return null;
 
-    return new Date(`${year}-${month}-${day}T08:00:00+07:00`);
-  }
-
-  // ถ้ายืมวันเดียว / ระยะสั้น แจ้งก่อนคืน 15 นาที
   return new Date(returnAt.getTime() - 15 * 60 * 1000);
 }
 
@@ -226,6 +270,65 @@ async function sendEmail(
   }
 }
 
+async function createNotification(
+  userEmail: string | null | undefined,
+  title: string,
+  message: string,
+  type: string,
+  requestId: string
+) {
+  if (!userEmail) return;
+
+  await supabaseAdmin.from('notifications').insert([
+    {
+      user_email: userEmail,
+      title,
+      message,
+      type,
+      related_request_id: requestId,
+    },
+  ]);
+}
+
+function createReminderEmailMessage({
+  userName,
+  heading,
+  requestNo,
+  itemTypeText,
+  itemName,
+  itemCode,
+  itemDetail,
+  returnDateText,
+  extraText,
+}: {
+  userName: string;
+  heading: string;
+  requestNo: string;
+  itemTypeText: string;
+  itemName: string;
+  itemCode: string;
+  itemDetail: string;
+  returnDateText: string;
+  extraText: string;
+}) {
+  return `เรียน คุณ${userName}
+
+${heading}
+
+รายละเอียดรายการ
+เลขคำขอยืม: ${requestNo}
+ประเภท: ${itemTypeText}
+รายการ: ${itemName}
+รหัสรายการ: ${itemCode}
+รายละเอียด: ${itemDetail}
+กำหนดคืน: ${returnDateText}
+
+${extraText}
+
+ขอแสดงความนับถือ
+ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
+}
+
 export async function GET() {
   try {
     const now = new Date();
@@ -243,6 +346,8 @@ export async function GET() {
         return_date,
         status,
         return_reminder_sent,
+        day_before_reminder_sent,
+        due_day_morning_reminder_sent,
         overdue_reminder_sent,
         equipment:equipment_id (
           name,
@@ -268,8 +373,11 @@ export async function GET() {
       );
     }
 
-    let returnReminderCount = 0;
+    let shortReturnReminderCount = 0;
+    let dayBeforeReminderCount = 0;
+    let dueDayMorningReminderCount = 0;
     let overdueCount = 0;
+
     let emailSentCount = 0;
     let emailFailedCount = 0;
     let adminEmailSentCount = 0;
@@ -280,9 +388,8 @@ export async function GET() {
 
     for (const item of (requests || []) as any[]) {
       const returnAt = parseDateTime(item.return_date);
-      const reminderAt = getReminderTime(item.borrow_date, item.return_date);
 
-      if (!returnAt || !reminderAt) continue;
+      if (!returnAt) continue;
 
       const itemName = getItemName(item);
       const itemCode = getItemCode(item);
@@ -292,93 +399,208 @@ export async function GET() {
       const userName = await getUserDisplayName(item);
       const requestNo = item.request_no || 'ไม่ระบุเลขคำขอ';
       const returnDateText = formatThaiDateTime(item.return_date);
+      const multiDay = isMultiDayBorrow(item.borrow_date, item.return_date);
 
-      // 1) แจ้งเตือนก่อนถึงเวลาคืน 15 นาที
-      if (
-        !item.return_reminder_sent &&
-        now.getTime() >= reminderAt.getTime() &&
-        now.getTime() < returnAt.getTime()
-      ) {
-        const title = 'แจ้งเตือนใกล้ถึงกำหนดคืนรายการ';
+      // 1) ยืมหลายวัน: แจ้งก่อนวันคืน 1 วัน เวลา 08:00 น.
+      if (multiDay && !item.day_before_reminder_sent) {
+        const dayBeforeReminderAt = getDayBeforeMorningTime(item.return_date);
 
-        const notificationMessage = `รายการ ${itemName} ใกล้ถึงกำหนดคืนแล้ว กรุณาคืนภายใน ${returnDateText}`;
+        if (
+          dayBeforeReminderAt &&
+          now.getTime() >= dayBeforeReminderAt.getTime() &&
+          now.getTime() < returnAt.getTime()
+        ) {
+          const title = 'แจ้งเตือนล่วงหน้าก่อนถึงวันคืนรายการ';
 
-        const emailMessage = `เรียน คุณ${userName}
+          const notificationMessage = `รายการ ${itemName} จะถึงกำหนดคืนในวันพรุ่งนี้ กรุณาเตรียมคืนภายใน ${returnDateText}`;
 
-ระบบขอแจ้งเตือนว่า รายการยืมของท่านใกล้ถึงกำหนดคืนภายใน 15 นาที
-
-รายละเอียดรายการ
-เลขคำขอยืม: ${requestNo}
-ประเภท: ${itemTypeText}
-รายการ: ${itemName}
-รหัสรายการ: ${itemCode}
-รายละเอียด: ${itemDetail}
-กำหนดคืน: ${returnDateText}
-
-กรุณาดำเนินการคืนรายการภายในเวลาที่กำหนด หรือแจ้งคืนผ่านระบบให้เร็วที่สุด
-
-หากเลยกำหนดคืน ระบบอาจบันทึกรายการเป็นการคืนเกินกำหนด
-
-ขอแสดงความนับถือ
-ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
-
-        const emailResult = await sendEmail(userEmail, title, emailMessage);
-
-        if (!emailResult.ok) {
-          emailFailedCount++;
-
-          emailErrors.push({
-            requestId: item.id,
+          const emailMessage = createReminderEmailMessage({
+            userName,
+            heading:
+              'ระบบขอแจ้งเตือนว่า รายการยืมของท่านจะถึงกำหนดคืนในวันพรุ่งนี้',
             requestNo,
-            to: userEmail,
-            type: 'return_reminder',
-            error: emailResult.error,
+            itemTypeText,
+            itemName,
+            itemCode,
+            itemDetail,
+            returnDateText,
+            extraText:
+              'กรุณาเตรียมรายการให้พร้อม และดำเนินการคืนตามวันและเวลาที่กำหนด',
           });
 
-          continue;
-        }
+          const emailResult = await sendEmail(userEmail, title, emailMessage);
 
-        await supabaseAdmin.from('notifications').insert([
-          {
-            user_email: userEmail,
+          if (!emailResult.ok) {
+            emailFailedCount++;
+
+            emailErrors.push({
+              requestId: item.id,
+              requestNo,
+              to: userEmail,
+              type: 'day_before_return_reminder',
+              error: emailResult.error,
+            });
+
+            continue;
+          }
+
+          await createNotification(
+            userEmail,
             title,
-            message: notificationMessage,
-            type: 'return_reminder',
-            related_request_id: item.id,
-          },
-        ]);
+            notificationMessage,
+            'day_before_return_reminder',
+            item.id
+          );
 
-        await supabaseAdmin
-          .from('borrow_requests')
-          .update({ return_reminder_sent: true })
-          .eq('id', item.id);
+          await supabaseAdmin
+            .from('borrow_requests')
+            .update({ day_before_reminder_sent: true })
+            .eq('id', item.id);
 
-        returnReminderCount++;
-        emailSentCount++;
+          dayBeforeReminderCount++;
+          emailSentCount++;
+        }
       }
 
-      // 2) แจ้งเตือนเกินกำหนดคืน
+      // 2) ยืมหลายวัน: แจ้งอีกครั้ง 08:00 น. ของวันที่ต้องคืน
+      if (multiDay && !item.due_day_morning_reminder_sent) {
+        const dueDayMorningReminderAt = getDueDayMorningTime(item.return_date);
+
+        if (
+          dueDayMorningReminderAt &&
+          now.getTime() >= dueDayMorningReminderAt.getTime() &&
+          now.getTime() < returnAt.getTime()
+        ) {
+          const title = 'แจ้งเตือนกำหนดคืนรายการภายในวันนี้';
+
+          const notificationMessage = `รายการ ${itemName} มีกำหนดคืนภายในวันนี้ กรุณาคืนภายใน ${returnDateText}`;
+
+          const emailMessage = createReminderEmailMessage({
+            userName,
+            heading:
+              'ระบบขอแจ้งเตือนว่า รายการยืมของท่านมีกำหนดคืนภายในวันนี้',
+            requestNo,
+            itemTypeText,
+            itemName,
+            itemCode,
+            itemDetail,
+            returnDateText,
+            extraText:
+              'กรุณาดำเนินการคืนรายการภายในวันนี้ตามเวลาที่กำหนด หรือแจ้งคืนผ่านระบบให้เรียบร้อย',
+          });
+
+          const emailResult = await sendEmail(userEmail, title, emailMessage);
+
+          if (!emailResult.ok) {
+            emailFailedCount++;
+
+            emailErrors.push({
+              requestId: item.id,
+              requestNo,
+              to: userEmail,
+              type: 'due_day_morning_reminder',
+              error: emailResult.error,
+            });
+
+            continue;
+          }
+
+          await createNotification(
+            userEmail,
+            title,
+            notificationMessage,
+            'due_day_morning_reminder',
+            item.id
+          );
+
+          await supabaseAdmin
+            .from('borrow_requests')
+            .update({ due_day_morning_reminder_sent: true })
+            .eq('id', item.id);
+
+          dueDayMorningReminderCount++;
+          emailSentCount++;
+        }
+      }
+
+      // 3) ยืมระยะสั้น / วันเดียว: แจ้งก่อนคืน 15 นาที
+      if (!multiDay && !item.return_reminder_sent) {
+        const shortReminderAt = getShortBorrowReminderTime(item.return_date);
+
+        if (
+          shortReminderAt &&
+          now.getTime() >= shortReminderAt.getTime() &&
+          now.getTime() < returnAt.getTime()
+        ) {
+          const title = 'แจ้งเตือนใกล้ถึงกำหนดคืนรายการ';
+
+          const notificationMessage = `รายการ ${itemName} ใกล้ถึงกำหนดคืนแล้ว กรุณาคืนภายใน ${returnDateText}`;
+
+          const emailMessage = createReminderEmailMessage({
+            userName,
+            heading:
+              'ระบบขอแจ้งเตือนว่า รายการยืมของท่านใกล้ถึงกำหนดคืนภายใน 15 นาที',
+            requestNo,
+            itemTypeText,
+            itemName,
+            itemCode,
+            itemDetail,
+            returnDateText,
+            extraText:
+              'กรุณาดำเนินการคืนรายการภายในเวลาที่กำหนด หรือแจ้งคืนผ่านระบบให้เร็วที่สุด\n\nหากเลยกำหนดคืน ระบบอาจบันทึกรายการเป็นการคืนเกินกำหนด',
+          });
+
+          const emailResult = await sendEmail(userEmail, title, emailMessage);
+
+          if (!emailResult.ok) {
+            emailFailedCount++;
+
+            emailErrors.push({
+              requestId: item.id,
+              requestNo,
+              to: userEmail,
+              type: 'return_reminder',
+              error: emailResult.error,
+            });
+
+            continue;
+          }
+
+          await createNotification(
+            userEmail,
+            title,
+            notificationMessage,
+            'return_reminder',
+            item.id
+          );
+
+          await supabaseAdmin
+            .from('borrow_requests')
+            .update({ return_reminder_sent: true })
+            .eq('id', item.id);
+
+          shortReturnReminderCount++;
+          emailSentCount++;
+        }
+      }
+
+      // 4) แจ้งเตือนเกินกำหนดคืน
       if (!item.overdue_reminder_sent && now.getTime() >= returnAt.getTime()) {
         const title = 'แจ้งเตือนรายการเกินกำหนดคืน';
 
         const notificationMessage = `รายการ ${itemName} เกินกำหนดคืนแล้ว กรุณารีบดำเนินการคืนรายการ`;
 
-        const emailMessage = `เรียน คุณ${userName}
-
-ระบบตรวจพบว่ารายการยืมของท่านเกินกำหนดคืนแล้ว
-
-รายละเอียดรายการ
-เลขคำขอยืม: ${requestNo}
-ประเภท: ${itemTypeText}
-รายการ: ${itemName}
-รหัสรายการ: ${itemCode}
-รายละเอียด: ${itemDetail}
-กำหนดคืน: ${returnDateText}
-
-กรุณารีบคืนรายการ หรือแจ้งคืนผ่านระบบโดยเร็วที่สุด
-
-ขอแสดงความนับถือ
-ระบบยืม–คืนอุปกรณ์และขอใช้คอมพิวเตอร์`;
+        const emailMessage = createReminderEmailMessage({
+          userName,
+          heading: 'ระบบตรวจพบว่ารายการยืมของท่านเกินกำหนดคืนแล้ว',
+          requestNo,
+          itemTypeText,
+          itemName,
+          itemCode,
+          itemDetail,
+          returnDateText,
+          extraText: 'กรุณารีบคืนรายการ หรือแจ้งคืนผ่านระบบโดยเร็วที่สุด',
+        });
 
         const emailResult = await sendEmail(userEmail, title, emailMessage);
 
@@ -396,15 +618,13 @@ export async function GET() {
           continue;
         }
 
-        await supabaseAdmin.from('notifications').insert([
-          {
-            user_email: userEmail,
-            title,
-            message: notificationMessage,
-            type: 'overdue',
-            related_request_id: item.id,
-          },
-        ]);
+        await createNotification(
+          userEmail,
+          title,
+          notificationMessage,
+          'overdue',
+          item.id
+        );
 
         const { data: admins } = await supabaseAdmin
           .from('users')
@@ -461,19 +681,27 @@ export async function GET() {
     }
 
     return NextResponse.json({
-        success: true,
-  message: 'check return reminders success',
-  totalApprovedRequests: requests?.length || 0,
-  returnReminderCount,
-  overdueCount,
-  emailSentCount,
-  emailFailedCount,
-  adminEmailSentCount,
-  adminEmailFailedCount,
-  emailErrors,
-  adminEmailErrors,
-});
-    
+      success: true,
+      apiVersion: 'multi-day-two-reminders-v1',
+      message: 'check return reminders success',
+      totalApprovedRequests: requests?.length || 0,
+
+      shortReturnReminderCount,
+      dayBeforeReminderCount,
+      dueDayMorningReminderCount,
+      returnReminderCount:
+        shortReturnReminderCount +
+        dayBeforeReminderCount +
+        dueDayMorningReminderCount,
+
+      overdueCount,
+      emailSentCount,
+      emailFailedCount,
+      adminEmailSentCount,
+      adminEmailFailedCount,
+      emailErrors,
+      adminEmailErrors,
+    });
   } catch (error) {
     const err = error as Error;
 
