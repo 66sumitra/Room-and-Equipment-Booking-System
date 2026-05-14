@@ -666,15 +666,17 @@ export default function MyBookingsPage() {
 
           <div className="grid w-full grid-cols-1 gap-2 lg:max-w-[220px]">
             <Button
-  className="h-9 rounded-xl bg-white px-3 text-[11px] font-bold !text-blue-600 ring-1 ring-blue-100 hover:bg-blue-50"
+  className="h-10 w-full justify-center rounded-full border border-blue-100 bg-gradient-to-r from-blue-50 to-white px-4 text-[12px] font-black !text-blue-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:shadow-md"
   onClick={() => {
     setSelected(item);
     setDetailOpen(true);
   }}
 >
-  <Eye size={13} className="mr-1.5" />
+  <span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+    <Eye size={13} />
+  </span>
   ดูรายละเอียด
-                </Button>
+</Button>
 
             {item.status === 'approved' && (
               <Button
