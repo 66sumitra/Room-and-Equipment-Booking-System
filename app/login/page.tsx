@@ -5,6 +5,9 @@ import { Mail, Lock, User, ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
+const GOOGLE_REDIRECT_URL =
+  "https://room-and-equipment-booking-system-j2o71jqqe.vercel.app/login";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,7 +41,6 @@ export default function LoginPage() {
       return;
     }
 
-    // 1) หา user ด้วย id ก่อน
     let { data: profile, error: profileError } = await supabase
       .from("users")
       .select("id, role, email_verified")
@@ -51,7 +53,6 @@ export default function LoginPage() {
       return;
     }
 
-    // 2) ถ้าไม่เจอด้วย id ให้หา email ต่อ
     if (!profile) {
       const { data: profileByEmail, error: emailProfileError } = await supabase
         .from("users")
@@ -71,7 +72,6 @@ export default function LoginPage() {
       profile = profileByEmail;
     }
 
-    // 3) ถ้าไม่เจอจริง ๆ ให้สร้าง user ใหม่
     if (!profile) {
       const { data: insertedUser, error: insertError } = await supabase
         .from("users")
@@ -99,7 +99,6 @@ export default function LoginPage() {
       profile = insertedUser;
     }
 
-    // 4) ถ้ามี user แล้วแต่ยังไม่ verify ให้ปรับเป็น true
     if (!profile.email_verified) {
       const { error: updateError } = await supabase
         .from("users")
@@ -112,7 +111,7 @@ export default function LoginPage() {
     }
 
     const target = profile.role === "admin" ? "/dashboard" : "/user/booking";
-    window.location.href = target;
+    window.location.replace(target);
   };
 
   useEffect(() => {
@@ -124,7 +123,6 @@ export default function LoginPage() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
 
-      // ถ้าไม่ได้กลับมาจาก Google และไม่มี session ก็ไม่ต้องทำอะไร
       setError("");
 
       try {
@@ -151,7 +149,6 @@ export default function LoginPage() {
           }
         }
 
-        // กรณี Supabase มี session แล้ว แต่ URL ไม่มี code ให้จับ
         const {
           data: { session },
           error: sessionError,
@@ -243,7 +240,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: GOOGLE_REDIRECT_URL,
           queryParams: {
             access_type: "offline",
             prompt: "select_account",
@@ -309,7 +306,7 @@ export default function LoginPage() {
       }
 
       const target = profile.role === "admin" ? "/dashboard" : "/user/booking";
-      window.location.href = target;
+      window.location.replace(target);
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ");
