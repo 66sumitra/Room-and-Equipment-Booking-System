@@ -5,9 +5,6 @@ import { Mail, Lock, User, ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
-const GOOGLE_REDIRECT_URL =
-  "https://room-and-equipment-booking-system-e7lxge97q.vercel.app/auth/callback";
-
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +18,11 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
   const [forgotError, setForgotError] = useState("");
+
+  const getCurrentOrigin = () => {
+    if (typeof window === "undefined") return "";
+    return window.location.origin;
+  };
 
   const getUserName = (user: any) => {
     return (
@@ -211,8 +213,10 @@ export default function LoginPage() {
     setForgotError("");
 
     try {
+      const origin = getCurrentOrigin();
+
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${origin}/reset-password`,
       });
 
       if (error) {
@@ -237,10 +241,12 @@ export default function LoginPage() {
     setGoogleLoading(true);
 
     try {
+      const origin = getCurrentOrigin();
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: GOOGLE_REDIRECT_URL,
+          redirectTo: `${origin}/auth/callback`,
           queryParams: {
             access_type: "offline",
             prompt: "select_account",
