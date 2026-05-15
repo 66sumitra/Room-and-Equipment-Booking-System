@@ -47,6 +47,10 @@ export default function MyBookingsPage() {
   const [selected, setSelected] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
   const [popup, setPopup] = useState<{
     open: boolean;
     type: 'success' | 'error';
@@ -433,6 +437,26 @@ export default function MyBookingsPage() {
     );
   }, [allBookings]);
 
+  const openCancelConfirm = (item: any) => {
+    if (item.status !== 'pending') {
+      showPopup(
+        'error',
+        'ยกเลิกไม่ได้',
+        'สามารถยกเลิกได้เฉพาะรายการที่ยังรออนุมัติเท่านั้น'
+      );
+      return;
+    }
+
+    setCancelTarget(item);
+    setCancelConfirmOpen(true);
+  };
+
+  const closeCancelConfirm = () => {
+    if (cancelLoading) return;
+    setCancelConfirmOpen(false);
+    setCancelTarget(null);
+  };
+
   const handleRequestReturn = async (item: any) => {
     try {
       const { error } = await supabase
@@ -527,11 +551,7 @@ export default function MyBookingsPage() {
         return;
       }
 
-      const confirmCancel = window.confirm(
-        `ต้องการยกเลิกคำขอ ${getRequestTitle(item)} ใช่ไหม?`
-      );
-
-      if (!confirmCancel) return;
+      setCancelLoading(true);
 
       const { error } = await supabase
         .from('borrow_requests')
@@ -582,6 +602,9 @@ export default function MyBookingsPage() {
         );
       }
 
+      setCancelConfirmOpen(false);
+      setCancelTarget(null);
+
       showPopup(
         'success',
         'ยกเลิกสำเร็จ',
@@ -591,6 +614,8 @@ export default function MyBookingsPage() {
       fetchBookings(currentUserEmail);
     } catch (error: any) {
       showPopup('error', 'เกิดข้อผิดพลาด', error.message);
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -776,7 +801,7 @@ export default function MyBookingsPage() {
             {item.status === 'pending' && (
               <Button
                 className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
-                onClick={() => handleCancelBooking(item)}
+                onClick={() => openCancelConfirm(item)}
               >
                 <XCircle size={15} />
                 <span>ยกเลิกคำขอ</span>
@@ -1041,7 +1066,7 @@ export default function MyBookingsPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 py-4 text-sm font-black text-white shadow-lg shadow-red-100 hover:bg-red-600"
                 onClick={() => {
                   setDetailOpen(false);
-                  handleCancelBooking(selected);
+                  openCancelConfirm(selected);
                 }}
               >
                 <XCircle size={17} />
@@ -1064,6 +1089,59 @@ export default function MyBookingsPage() {
           </div>
         )}
       </Modal>
+
+      {cancelConfirmOpen && cancelTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <XCircle size={34} />
+            </div>
+
+            <div className="text-center">
+              <h3 className="text-xl font-black text-slate-900">
+                ยืนยันการยกเลิกคำขอ
+              </h3>
+
+              <p className="mt-3 text-sm font-bold leading-relaxed text-slate-500">
+                ต้องการยกเลิกคำขอ{' '}
+                <span className="text-slate-900">
+                  {getRequestTitle(cancelTarget)}
+                </span>{' '}
+                ใช่ไหม?
+              </p>
+
+              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-left">
+                <p className="text-xs font-black text-red-500">
+                  เลขคำขอ: {getRequestNo(cancelTarget)}
+                </p>
+                <p className="mt-1 text-xs font-bold text-red-400">
+                  เมื่อยกเลิกแล้ว รายการนี้จะถูกเปลี่ยนสถานะเป็น “ยกเลิกแล้ว”
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={cancelLoading}
+                onClick={closeCancelConfirm}
+                className="rounded-2xl border border-slate-200 bg-white py-3 text-sm font-black text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                ไม่ยกเลิก
+              </button>
+
+              <button
+                type="button"
+                disabled={cancelLoading}
+                onClick={() => handleCancelBooking(cancelTarget)}
+                className="rounded-2xl bg-red-500 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {cancelLoading ? 'กำลังยกเลิก...' : 'ยืนยันยกเลิก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {popup.open && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-4 pt-8">
