@@ -763,7 +763,7 @@ export default function MyBookingsPage() {
 
           <div className="flex w-full flex-col items-end gap-3 lg:max-w-[230px]">
             <Button
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-[12px] font-black text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700"
+              className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-[12px] font-black text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700"
               onClick={() => {
                 setSelected(item);
                 setDetailOpen(true);
@@ -775,7 +775,7 @@ export default function MyBookingsPage() {
 
             {item.status === 'pending' && (
               <Button
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
+                className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
                 onClick={() => handleCancelBooking(item)}
               >
                 <XCircle size={15} />
@@ -785,7 +785,7 @@ export default function MyBookingsPage() {
 
             {item.status === 'approved' && (
               <Button
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
+                className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
                 onClick={() => handleRequestReturn(item)}
               >
                 <RotateCcw size={15} />
