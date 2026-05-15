@@ -486,8 +486,8 @@ export default function MyBookingsPage() {
         await supabase.from('notifications').insert(
           adminEmails.map((adminEmail) => ({
             user_email: adminEmail,
-            title: 'มีคำขอคืนใหม่',
-            message: `${userEmail} ได้ส่งคำขอคืน ${itemName} รหัส ${equipmentCode} เลขคำขอ ${requestNo}`,
+            title: 'แจ้งเตือนคำขอคืนอุปกรณ์',
+            message: `ผู้ใช้งาน ${userEmail} ได้ส่งคำขอคืน ${itemName} รหัส ${equipmentCode} เลขที่คำขอ ${requestNo} กรุณาตรวจสอบและยืนยันการรับคืน`,
             type: 'return_requested',
             related_request_id: item.id,
           }))
@@ -497,18 +497,23 @@ export default function MyBookingsPage() {
           adminEmails.map((adminEmail) =>
             sendEmail(
               adminEmail,
-              'มีคำขอคืนใหม่',
-              `มีคำขอคืน${itemTypeText}ใหม่จากผู้ใช้ ${userEmail}
+              'แจ้งเตือนคำขอคืนอุปกรณ์',
+              `เรียน ผู้ดูแลระบบ
+
+ระบบได้รับคำขอคืน${itemTypeText}จากผู้ใช้งาน ${userEmail}
 
 รายละเอียดคำขอคืน
-เลขคำขอยืม: ${requestNo}
+เลขที่คำขอ: ${requestNo}
 รหัสรายการ: ${equipmentCode}
 รายการที่ขอคืน: ${itemName}
 ประเภท: ${itemTypeText}
-รายละเอียด: ${itemSubtitle}
-เหตุผลเดิม: ${item.reason || 'ไม่ระบุ'}
+รายละเอียดเพิ่มเติม: ${itemSubtitle}
+เหตุผลในการขอใช้งานเดิม: ${item.reason || 'ไม่ระบุ'}
 
-กรุณาเข้าสู่ระบบเพื่อตรวจสอบและยืนยันการรับคืน`
+กรุณาเข้าสู่ระบบเพื่อตรวจสอบข้อมูล และดำเนินการยืนยันการรับคืน
+
+ขอแสดงความนับถือ
+ระบบยืม-คืนอุปกรณ์และขอใช้คอมพิวเตอร์`
             )
           )
         );
