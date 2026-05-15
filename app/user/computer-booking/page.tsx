@@ -14,6 +14,8 @@ import {
   MousePointerClick,
   CheckCircle,
   DoorOpen,
+  CalendarDays,
+  Clock,
 } from 'lucide-react';
 
 function generateRequestNo() {
@@ -28,6 +30,28 @@ function generateRequestNo() {
   return `BR-${year}${month}${day}-${timePart}${randomPart}`;
 }
 
+function toDatetimeLocalValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+function formatThaiDateTime(dateTime: string | null | undefined) {
+  if (!dateTime) return 'ไม่ระบุ';
+
+  return new Date(dateTime).toLocaleString('th-TH', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function UserComputerBooking() {
   const [computers, setComputers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +59,9 @@ export default function UserComputerBooking() {
   const [selectedRoom, setSelectedRoom] = useState('');
   const [reason, setReason] = useState('');
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+
+  const [startDateTime, setStartDateTime] = useState('');
+  const [endDateTime, setEndDateTime] = useState('');
 
   const [popup, setPopup] = useState<{
     open: boolean;
@@ -47,6 +74,18 @@ export default function UserComputerBooking() {
     title: '',
     message: '',
   });
+
+  useEffect(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setMinutes(start.getMinutes() + 10);
+
+    const end = new Date(start);
+    end.setHours(end.getHours() + 1);
+
+    setStartDateTime(toDatetimeLocalValue(start));
+    setEndDateTime(toDatetimeLocalValue(end));
+  }, []);
 
   const showPopup = (
     type: 'success' | 'error',
@@ -200,6 +239,51 @@ export default function UserComputerBooking() {
       return;
     }
 
+    if (!startDateTime) {
+      showPopup(
+        'error',
+        'ข้อมูลไม่ครบ',
+        'กรุณาระบุวันที่และเวลาเริ่มใช้งาน'
+      );
+      return;
+    }
+
+    if (!endDateTime) {
+      showPopup(
+        'error',
+        'ข้อมูลไม่ครบ',
+        'กรุณาระบุวันที่และเวลาสิ้นสุดการใช้งาน'
+      );
+      return;
+    }
+
+    const start = new Date(startDateTime);
+    const end = new Date(endDateTime);
+    const now = new Date();
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      showPopup('error', 'รูปแบบเวลาไม่ถูกต้อง', 'กรุณาเลือกวันและเวลาใหม่');
+      return;
+    }
+
+    if (start < now) {
+      showPopup(
+        'error',
+        'เวลาไม่ถูกต้อง',
+        'วันที่และเวลาเริ่มใช้งานต้องไม่เป็นเวลาย้อนหลัง'
+      );
+      return;
+    }
+
+    if (end <= start) {
+      showPopup(
+        'error',
+        'เวลาไม่ถูกต้อง',
+        'วันที่และเวลาสิ้นสุดการใช้งานต้องมากกว่าวันที่และเวลาเริ่มใช้งาน'
+      );
+      return;
+    }
+
     if (!reason.trim()) {
       showPopup('error', 'ข้อมูลไม่ครบ', 'กรุณาระบุเหตุผลการใช้งาน');
       return;
@@ -223,8 +307,8 @@ export default function UserComputerBooking() {
           user_name: currentUserEmail,
           user_email: currentUserEmail,
           reason: reason.trim(),
-          borrow_date: new Date().toISOString(),
-          return_date: null,
+          borrow_date: start.toISOString(),
+          return_date: end.toISOString(),
           urgent: false,
           status: 'pending',
         },
@@ -251,7 +335,9 @@ export default function UserComputerBooking() {
             title: 'มีคำขอใช้คอมพิวเตอร์ใหม่',
             message: `${currentUserEmail} ได้ส่งคำขอใช้งาน ${
               selectedPc.pc_name
-            } ห้อง ${getRoomName(selectedPc)} เลขคำขอ ${requestNo}`,
+            } ห้อง ${getRoomName(selectedPc)} เลขคำขอ ${requestNo} เริ่มใช้งาน ${formatThaiDateTime(
+              start.toISOString()
+            )} ถึง ${formatThaiDateTime(end.toISOString())}`,
             type: 'new_request',
             related_request_id: insertedRequest.id,
           }))
@@ -266,7 +352,11 @@ export default function UserComputerBooking() {
           selectedPc.pc_name
         } ห้อง ${getRoomName(
           selectedPc
-        )} แล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินตรวจสอบ`,
+        )} แล้ว เลขคำขอ ${requestNo} วันที่เริ่มใช้งาน ${formatThaiDateTime(
+          start.toISOString()
+        )} ถึง ${formatThaiDateTime(
+          end.toISOString()
+        )} กรุณารอแอดมินตรวจสอบ`,
         type: 'request_submitted',
         related_request_id: insertedRequest.id,
       },
@@ -476,6 +566,47 @@ export default function UserComputerBooking() {
                     </p>
                     <p className="mt-2 text-sm font-bold text-slate-400">
                       ห้อง {getRoomName(selectedPc)}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="mb-2 flex items-center gap-2 text-base font-black text-slate-700">
+                        <CalendarDays size={17} className="text-[#4d7cff]" />
+                        วันที่และเวลาเริ่มใช้งาน{' '}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={startDateTime}
+                        onChange={(e) => setStartDateTime(e.target.value)}
+                        className="h-12 w-full rounded-[18px] border-2 border-[#dde6f3] bg-white px-4 text-sm font-bold text-slate-800 focus:border-[#4d7cff] focus:outline-none focus:ring-4 focus:ring-[#4d7cff]/10"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 flex items-center gap-2 text-base font-black text-slate-700">
+                        <Clock size={17} className="text-[#4d7cff]" />
+                        วันที่และเวลาสิ้นสุดการใช้งาน{' '}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={endDateTime}
+                        onChange={(e) => setEndDateTime(e.target.value)}
+                        className="h-12 w-full rounded-[18px] border-2 border-[#dde6f3] bg-white px-4 text-sm font-bold text-slate-800 focus:border-[#4d7cff] focus:outline-none focus:ring-4 focus:ring-[#4d7cff]/10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[20px] border border-blue-100 bg-blue-50/50 px-4 py-3">
+                    <p className="text-xs font-black text-blue-600">
+                      ช่วงเวลาที่เลือก
+                    </p>
+                    <p className="mt-1 text-sm font-bold leading-relaxed text-slate-600">
+                      เริ่มใช้งาน: {formatThaiDateTime(startDateTime)}
+                      <br />
+                      สิ้นสุดการใช้งาน: {formatThaiDateTime(endDateTime)}
                     </p>
                   </div>
 
