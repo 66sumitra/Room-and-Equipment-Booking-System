@@ -815,7 +815,7 @@ export default function MyBookingsPage() {
             รายการขอใช้งานและยืมของฉันทั้งหมด
           </h1>
           <p className="mt-2 text-sm font-bold text-slate-400">
-            ติดตามสถานะการจองและรายการยืมทั้งหมดของคุณ
+            ติดตามสถานะการขอใช้งานและรายการยืมทั้งหมดของคุณ
           </p>
         </div>
 
