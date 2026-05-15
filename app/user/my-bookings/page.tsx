@@ -932,7 +932,7 @@ export default function MyBookingsPage() {
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 rounded-full bg-blue-600"></span>
             <h2 className="text-xl font-black text-slate-900">
-              ประวัติการจองทั้งหมด
+              ประวัติการขอยืมทั้งหมด
             </h2>
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-600">
               {filteredBookings.length} รายการ
