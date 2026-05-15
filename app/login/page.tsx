@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, Lock, User, ArrowRight, X } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, X, Monitor } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -323,134 +323,196 @@ export default function LoginPage() {
 
   return (
     <>
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-        <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
-          <div className="relative bg-gradient-to-r from-blue-600 to-teal-400 p-10 text-center text-white">
-            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-white/20 backdrop-blur-sm">
-              <User size={32} />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f8fbff] px-4 py-10">
+        {/* พื้นหลังให้เข้ากับหน้าแรก */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#dbeafe_1px,transparent_1px),linear-gradient(to_bottom,#dbeafe_1px,transparent_1px)] bg-[size:56px_56px] opacity-35" />
+        <div className="absolute left-[-160px] top-[-160px] h-[420px] w-[420px] rounded-full bg-blue-200/60 blur-3xl" />
+        <div className="absolute right-[-140px] top-20 h-[420px] w-[420px] rounded-full bg-cyan-200/70 blur-3xl" />
+        <div className="absolute bottom-[-180px] left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-blue-100/80 blur-3xl" />
+
+        <div className="relative z-10 grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[1fr_440px]">
+          {/* ฝั่งข้อความ เหมือนหน้าแรก */}
+          <div className="hidden text-center lg:block lg:text-left">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] border border-blue-100 bg-white/85 text-blue-600 shadow-xl shadow-blue-100 lg:mx-0">
+              <Monitor size={40} />
             </div>
 
-            <h2 className="text-2xl font-bold">ยินดีต้อนรับ</h2>
+            <div className="mb-5 inline-flex rounded-full border border-blue-100 bg-white/80 px-5 py-2 text-sm font-black text-blue-600 shadow-sm backdrop-blur">
+              ระบบจัดการการยืมอุปกรณ์และขอใช้งานคอมพิวเตอร์
+            </div>
 
-            <p className="mt-1 text-sm text-blue-50 opacity-90">
-              เข้าสู่ระบบเพื่อใช้งาน
+            <h1 className="max-w-2xl text-5xl font-black leading-tight tracking-tight text-slate-950">
+              ยินดีต้อนรับเข้าสู่ระบบ
+              <br />
+              ยืมอุปกรณ์และขอใช้คอมพิวเตอร์
+            </h1>
+
+            <p className="mt-5 max-w-xl text-lg font-semibold leading-relaxed text-slate-500">
+              เข้าสู่ระบบเพื่อส่งคำขอ ติดตามสถานะ และรับการแจ้งเตือนแบบเรียลไทม์
             </p>
-          </div>
 
-          <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-center text-xs font-bold text-red-500">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="ml-1 text-xs font-semibold text-gray-500">
-                  อีเมล
-                </label>
-
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={18}
-                  />
-
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading || googleLoading}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
-                    required
-                  />
-                </div>
+            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-4">
+              <div className="rounded-[24px] border border-white/70 bg-white/75 p-5 shadow-lg shadow-blue-100/40 backdrop-blur">
+                <p className="text-sm font-black text-slate-900">
+                  ขอใช้คอมพิวเตอร์
+                </p>
+                <p className="mt-2 text-xs font-bold leading-relaxed text-slate-400">
+                  เลือกเครื่องและช่วงเวลาที่ต้องการใช้งาน
+                </p>
               </div>
 
-              <div className="space-y-1">
-                <label className="ml-1 text-xs font-semibold text-gray-500">
-                  รหัสผ่าน
-                </label>
+              <div className="rounded-[24px] border border-white/70 bg-white/75 p-5 shadow-lg shadow-blue-100/40 backdrop-blur">
+                <p className="text-sm font-black text-slate-900">
+                  ยืมอุปกรณ์
+                </p>
+                <p className="mt-2 text-xs font-bold leading-relaxed text-slate-400">
+                  ส่งคำขอและดูสถานะได้ในระบบ
+                </p>
+              </div>
 
-                <div className="relative">
-                  <Lock
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={18}
-                  />
+              <div className="rounded-[24px] border border-white/70 bg-white/75 p-5 shadow-lg shadow-blue-100/40 backdrop-blur">
+                <p className="text-sm font-black text-slate-900">
+                  อนุมัติรวดเร็ว
+                </p>
+                <p className="mt-2 text-xs font-bold leading-relaxed text-slate-400">
+                  แอดมินตรวจสอบคำขอได้ทันที
+                </p>
+              </div>
+            </div>
+          </div>
 
-                  <input
-                    type="password"
-                    placeholder="รหัสผ่าน"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading || googleLoading}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
-                    required
-                  />
+          {/* Login Card */}
+          <div className="mx-auto w-full max-w-md overflow-hidden rounded-[32px] border border-white/80 bg-white/90 shadow-2xl shadow-slate-300/60 backdrop-blur-xl">
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-sky-500 to-teal-400 p-10 text-center text-white">
+              <div className="absolute left-[-40px] top-[-40px] h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+              <div className="absolute bottom-[-50px] right-[-30px] h-36 w-36 rounded-full bg-white/15 blur-2xl" />
+
+              <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-white/20 backdrop-blur-sm">
+                <User size={32} />
+              </div>
+
+              <h2 className="relative text-2xl font-black">ยินดีต้อนรับ</h2>
+
+              <p className="relative mt-1 text-sm font-semibold text-blue-50 opacity-95">
+                เข้าสู่ระบบเพื่อใช้งาน
+              </p>
+            </div>
+
+            <div className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-center text-xs font-bold text-red-500">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="ml-1 text-xs font-bold text-slate-500">
+                    อีเมล
+                  </label>
+
+                  <div className="relative">
+                    <Mail
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      size={18}
+                    />
+
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading || googleLoading}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:opacity-70"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={openForgotPassword}
-                    disabled={loading || googleLoading}
-                    className="text-xs font-bold text-blue-600 hover:underline disabled:opacity-60"
-                  >
-                    ลืมรหัสผ่าน?
-                  </button>
+                <div className="space-y-1">
+                  <label className="ml-1 text-xs font-bold text-slate-500">
+                    รหัสผ่าน
+                  </label>
+
+                  <div className="relative">
+                    <Lock
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      size={18}
+                    />
+
+                    <input
+                      type="password"
+                      placeholder="รหัสผ่าน"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading || googleLoading}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:opacity-70"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={openForgotPassword}
+                      disabled={loading || googleLoading}
+                      className="text-xs font-black text-blue-600 hover:underline disabled:opacity-60"
+                    >
+                      ลืมรหัสผ่าน?
+                    </button>
+                  </div>
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || googleLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 py-3.5 font-black text-white shadow-lg shadow-blue-200 transition-all hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+                  {!loading && <ArrowRight size={18} />}
+                </button>
+              </form>
+
+              <div className="my-5 flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs font-black text-slate-400">หรือ</span>
+                <div className="h-px flex-1 bg-slate-200" />
               </div>
 
               <button
-                type="submit"
+                type="button"
+                onClick={handleGoogleLogin}
                 disabled={loading || googleLoading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-                {!loading && <ArrowRight size={18} />}
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-black text-blue-600">
+                  G
+                </span>
+
+                {googleLoading
+                  ? "กำลังเข้าสู่ระบบด้วย Google..."
+                  : "เข้าสู่ระบบด้วย Google"}
               </button>
-            </form>
 
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-xs font-bold text-gray-400">หรือ</span>
-              <div className="h-px flex-1 bg-gray-200" />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading || googleLoading}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:bg-gray-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-black text-blue-600">
-                G
-              </span>
-
-              {googleLoading
-                ? "กำลังเข้าสู่ระบบด้วย Google..."
-                : "เข้าสู่ระบบด้วย Google"}
-            </button>
-
-            <div className="mt-8 space-y-4 text-center">
-              <p className="text-sm font-medium text-gray-600">
-                ยังไม่มีบัญชี?{" "}
-                <Link
-                  href="/register"
-                  className="font-bold text-red-500 hover:underline"
-                >
-                  สมัครสมาชิก
-                </Link>
-              </p>
+              <div className="mt-8 space-y-4 text-center">
+                <p className="text-sm font-semibold text-slate-600">
+                  ยังไม่มีบัญชี?{" "}
+                  <Link
+                    href="/register"
+                    className="font-black text-red-500 hover:underline"
+                  >
+                    สมัครสมาชิก
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {forgotOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] border border-white/80 bg-white p-8 shadow-2xl">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-black text-slate-800">
@@ -479,7 +541,7 @@ export default function LoginPage() {
 
                 <div className="relative">
                   <Mail
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                     size={18}
                   />
 
@@ -493,7 +555,7 @@ export default function LoginPage() {
                       setForgotMessage("");
                     }}
                     disabled={forgotLoading}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm font-bold text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:opacity-70"
                   />
                 </div>
               </div>
