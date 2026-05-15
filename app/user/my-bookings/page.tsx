@@ -18,6 +18,7 @@ import {
   Eye,
   CalendarDays,
   User,
+  XCircle,
 } from 'lucide-react';
 
 type StatusFilter =
@@ -25,7 +26,8 @@ type StatusFilter =
   | 'pending'
   | 'approved'
   | 'return_pending'
-  | 'returned';
+  | 'returned'
+  | 'cancelled';
 
 type TypeFilter = 'all' | 'equipment' | 'computer';
 
@@ -34,6 +36,7 @@ export default function MyBookingsPage() {
   const [approvedBookings, setApprovedBookings] = useState<any[]>([]);
   const [returnPendingBookings, setReturnPendingBookings] = useState<any[]>([]);
   const [returnedBookings, setReturnedBookings] = useState<any[]>([]);
+  const [cancelledBookings, setCancelledBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
 
@@ -148,10 +151,10 @@ export default function MyBookingsPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error('send return request email error:', errorData);
+        console.error('send email error:', errorData);
       }
     } catch (error) {
-      console.error('send return request email failed:', error);
+      console.error('send email failed:', error);
     }
   };
 
@@ -208,7 +211,13 @@ export default function MyBookingsPage() {
           user_email
         `)
         .eq('user_email', userEmail)
-        .in('status', ['pending', 'approved', 'return_pending', 'returned'])
+        .in('status', [
+          'pending',
+          'approved',
+          'return_pending',
+          'returned',
+          'cancelled',
+        ])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -289,12 +298,16 @@ export default function MyBookingsPage() {
       setReturnedBookings(
         mergedRows.filter((item) => item.status === 'returned')
       );
+      setCancelledBookings(
+        mergedRows.filter((item) => item.status === 'cancelled')
+      );
     } catch (error: any) {
       console.error('fetchBookings error:', error.message);
       setPendingBookings([]);
       setApprovedBookings([]);
       setReturnPendingBookings([]);
       setReturnedBookings([]);
+      setCancelledBookings([]);
     } finally {
       setLoading(false);
     }
@@ -341,6 +354,7 @@ export default function MyBookingsPage() {
     if (status === 'approved') return 'กำลังใช้งาน';
     if (status === 'return_pending') return 'รอรับคืน';
     if (status === 'returned') return 'คืนแล้ว';
+    if (status === 'cancelled') return 'ยกเลิกแล้ว';
 
     return status;
   };
@@ -362,6 +376,10 @@ export default function MyBookingsPage() {
       return 'bg-emerald-50 text-emerald-600 border-emerald-100';
     }
 
+    if (status === 'cancelled') {
+      return 'bg-red-50 text-red-600 border-red-100';
+    }
+
     return 'bg-slate-50 text-slate-500 border-slate-100';
   };
 
@@ -371,12 +389,14 @@ export default function MyBookingsPage() {
       ...approvedBookings,
       ...returnPendingBookings,
       ...returnedBookings,
+      ...cancelledBookings,
     ];
   }, [
     pendingBookings,
     approvedBookings,
     returnPendingBookings,
     returnedBookings,
+    cancelledBookings,
   ]);
 
   const filteredBookings = useMemo(() => {
@@ -488,6 +508,84 @@ export default function MyBookingsPage() {
         item.request_type === 'computer'
           ? `แจ้งคืนคอมพิวเตอร์เรียบร้อยแล้ว เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
           : `แจ้งคืนอุปกรณ์เรียบร้อยแล้ว รหัสอุปกรณ์ ${equipmentCode} เลขคำขอ ${requestNo} กรุณารอแอดมินยืนยันรับคืน`
+      );
+
+      fetchBookings(currentUserEmail);
+    } catch (error: any) {
+      showPopup('error', 'เกิดข้อผิดพลาด', error.message);
+    }
+  };
+
+  const handleCancelBooking = async (item: any) => {
+    try {
+      if (item.status !== 'pending') {
+        showPopup(
+          'error',
+          'ยกเลิกไม่ได้',
+          'สามารถยกเลิกได้เฉพาะรายการที่ยังรออนุมัติเท่านั้น'
+        );
+        return;
+      }
+
+      const confirmCancel = window.confirm(
+        `ต้องการยกเลิกคำขอ ${getRequestTitle(item)} ใช่ไหม?`
+      );
+
+      if (!confirmCancel) return;
+
+      const { error } = await supabase
+        .from('borrow_requests')
+        .update({
+          status: 'cancelled',
+        })
+        .eq('id', item.id)
+        .eq('user_email', currentUserEmail)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+
+      const itemName = getRequestTitle(item);
+      const requestNo = getRequestNo(item);
+      const equipmentCode = getEquipmentCode(item);
+      const userEmail = item.user_email || currentUserEmail;
+
+      if (userEmail) {
+        await supabase.from('notifications').insert([
+          {
+            user_email: userEmail,
+            title: 'ยกเลิกคำขอสำเร็จ',
+            message: `คุณได้ยกเลิกคำขอ ${itemName} รหัส ${equipmentCode} เลขคำขอ ${requestNo} แล้ว`,
+            type: 'cancelled',
+            related_request_id: item.id,
+          },
+        ]);
+      }
+
+      const { data: admins } = await supabase
+        .from('users')
+        .select('email')
+        .eq('role', 'admin');
+
+      const adminEmails = (admins || [])
+        .map((admin) => admin.email)
+        .filter(Boolean);
+
+      if (adminEmails.length > 0) {
+        await supabase.from('notifications').insert(
+          adminEmails.map((adminEmail) => ({
+            user_email: adminEmail,
+            title: 'ผู้ใช้ยกเลิกคำขอ',
+            message: `${userEmail} ได้ยกเลิกคำขอ ${itemName} รหัส ${equipmentCode} เลขคำขอ ${requestNo}`,
+            type: 'cancelled',
+            related_request_id: item.id,
+          }))
+        );
+      }
+
+      showPopup(
+        'success',
+        'ยกเลิกสำเร็จ',
+        `ยกเลิกคำขอ ${itemName} เลขคำขอ ${requestNo} เรียบร้อยแล้ว`
       );
 
       fetchBookings(currentUserEmail);
@@ -637,6 +735,20 @@ export default function MyBookingsPage() {
                 </div>
               </div>
             )}
+
+            {item.status === 'cancelled' && (
+              <div className="flex items-start gap-3">
+                <XCircle size={18} className="mt-0.5 text-red-500" />
+                <div>
+                  <p className="text-xs font-black text-slate-400">
+                    สถานะคำขอ
+                  </p>
+                  <p className="text-sm font-black text-red-600">
+                    ผู้ใช้ยกเลิกคำขอแล้ว
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -668,6 +780,16 @@ export default function MyBookingsPage() {
               >
                 <RotateCcw size={15} />
                 <span>{getRequestButtonText(item)}</span>
+              </Button>
+            )}
+
+            {item.status === 'pending' && (
+              <Button
+                className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-slate-700 px-5 text-[12px] font-black text-white shadow-md shadow-slate-100 transition-all hover:bg-slate-800"
+                onClick={() => handleCancelBooking(item)}
+              >
+                <XCircle size={15} />
+                <span>ยกเลิกคำขอ</span>
               </Button>
             )}
           </div>
@@ -742,6 +864,12 @@ export default function MyBookingsPage() {
                 onClick={() => setStatusFilter('returned')}
               >
                 คืนแล้ว
+              </FilterButton>
+              <FilterButton
+                active={statusFilter === 'cancelled'}
+                onClick={() => setStatusFilter('cancelled')}
+              >
+                ยกเลิกแล้ว
               </FilterButton>
             </div>
 
@@ -904,6 +1032,19 @@ export default function MyBookingsPage() {
               >
                 <RotateCcw size={17} />
                 <span>{getRequestButtonText(selected)}</span>
+              </Button>
+            )}
+
+            {selected.status === 'pending' && (
+              <Button
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-700 py-4 text-sm font-black text-white shadow-lg shadow-slate-100"
+                onClick={() => {
+                  setDetailOpen(false);
+                  handleCancelBooking(selected);
+                }}
+              >
+                <XCircle size={17} />
+                <span>ยกเลิกคำขอ</span>
               </Button>
             )}
           </div>
