@@ -812,7 +812,7 @@ export default function MyBookingsPage() {
       <div className="space-y-4 pb-20">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-            ประวัติการขอใช้งานและยืมของฉัน
+            รายการขอใช้งานและยืมของฉันทั้งหมด
           </h1>
           <p className="mt-2 text-sm font-bold text-slate-400">
             ติดตามสถานะการจองและรายการยืมทั้งหมดของคุณ
