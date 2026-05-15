@@ -53,11 +53,11 @@ export function DashboardLayout({
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) return null;
 
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden bg-gray-50">
-      {/* Sidebar บนจอคอม / iPad */}
-      <div className="hidden shrink-0 md:block">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gray-50">
+      {/* Sidebar บนจอคอม / iPad: fixed ให้เลื่อนตามหน้าจอ */}
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 overflow-y-auto bg-blue-700 md:block">
         <Sidebar />
-      </div>
+      </aside>
 
       {/* Sidebar แบบมือถือ */}
       {mobileMenuOpen && (
@@ -67,7 +67,7 @@ export function DashboardLayout({
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          <div className="relative z-50 h-full w-[280px] max-w-[85vw] bg-blue-700 shadow-2xl">
+          <div className="relative z-50 h-full w-[280px] max-w-[85vw] overflow-y-auto bg-blue-700 shadow-2xl">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
@@ -82,10 +82,10 @@ export function DashboardLayout({
         </div>
       )}
 
-      {/* Main content */}
-      <div className="min-w-0 flex-1 w-full">
+      {/* Main content: เว้นซ้ายเท่าความกว้าง Sidebar */}
+      <div className="min-w-0 w-full md:pl-64">
         {/* ปุ่มเมนูบนมือถือ */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3 md:hidden">
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3 md:hidden">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
