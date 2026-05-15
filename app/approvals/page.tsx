@@ -997,7 +997,7 @@ ${itemCodeLabel}: ${itemCode}
 
   const ReturnRequestCard = ({ req }: { req: any }) => (
     <div className="rounded-[2rem] border border-amber-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl md:p-6">
-      <div className="grid gap-5 lg:grid-cols-[1fr_260px_180px] lg:items-center">
+      <div className="grid gap-5 lg:grid-cols-[1fr_260px_300px] lg:items-center">
         <div className="flex min-w-0 gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-amber-50 text-amber-600">
             <RotateCcw size={30} />
@@ -1063,13 +1063,15 @@ ${itemCodeLabel}: ${itemCode}
           </div>
         </div>
 
-        <Button
-          className="h-12 rounded-2xl bg-blue-600 px-5 text-sm font-black !text-white shadow-lg shadow-blue-100 hover:bg-blue-700"
-          onClick={() => openConfirm(req, 'confirm_return')}
-        >
-          <CheckCircle2 size={17} className="mr-2 text-white" />
-          ยืนยันรับคืน
-        </Button>
+        <div className="grid w-full grid-cols-1 gap-2 lg:max-w-[300px]">
+          <Button
+            className="flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-3 text-xs font-black !text-white shadow-lg shadow-blue-100 hover:bg-blue-700"
+            onClick={() => openConfirm(req, 'confirm_return')}
+          >
+            <CheckCircle2 size={16} className="mr-1 text-white" />
+            ยืนยันรับคืน
+          </Button>
+        </div>
       </div>
     </div>
   );
