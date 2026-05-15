@@ -652,7 +652,7 @@ export default function MyBookingsPage() {
 
   const BookingCard = ({ item }: { item: any }) => (
     <div className="group rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl md:p-6">
-      <div className="grid gap-5 lg:grid-cols-[1fr_260px_220px] lg:items-center">
+      <div className="grid gap-5 lg:grid-cols-[1fr_260px_230px] lg:items-center">
         <div className="flex min-w-0 gap-4">
           <div
             className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl ${
@@ -761,9 +761,9 @@ export default function MyBookingsPage() {
             {getStatusText(item.status)}
           </span>
 
-          <div className="flex w-full flex-col items-end gap-3 lg:max-w-[220px]">
+          <div className="flex w-full flex-col items-end gap-3 lg:max-w-[230px]">
             <Button
-              className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-[12px] font-black text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 text-[12px] font-black text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700"
               onClick={() => {
                 setSelected(item);
                 setDetailOpen(true);
@@ -773,23 +773,23 @@ export default function MyBookingsPage() {
               <span>ดูรายละเอียด</span>
             </Button>
 
-            {item.status === 'approved' && (
-              <Button
-                className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
-                onClick={() => handleRequestReturn(item)}
-              >
-                <RotateCcw size={15} />
-                <span>{getRequestButtonText(item)}</span>
-              </Button>
-            )}
-
             {item.status === 'pending' && (
               <Button
-                className="flex h-10 w-fit items-center justify-center gap-2 rounded-full bg-slate-700 px-5 text-[12px] font-black text-white shadow-md shadow-slate-100 transition-all hover:bg-slate-800"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
                 onClick={() => handleCancelBooking(item)}
               >
                 <XCircle size={15} />
                 <span>ยกเลิกคำขอ</span>
+              </Button>
+            )}
+
+            {item.status === 'approved' && (
+              <Button
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-red-500 px-5 text-[12px] font-black text-white shadow-md shadow-red-100 transition-all hover:bg-red-600"
+                onClick={() => handleRequestReturn(item)}
+              >
+                <RotateCcw size={15} />
+                <span>{getRequestButtonText(item)}</span>
               </Button>
             )}
           </div>
@@ -841,30 +841,35 @@ export default function MyBookingsPage() {
               >
                 สถานะทั้งหมด
               </FilterButton>
+
               <FilterButton
                 active={statusFilter === 'pending'}
                 onClick={() => setStatusFilter('pending')}
               >
                 กำลังขอใช้งาน
               </FilterButton>
+
               <FilterButton
                 active={statusFilter === 'approved'}
                 onClick={() => setStatusFilter('approved')}
               >
                 กำลังใช้งาน
               </FilterButton>
+
               <FilterButton
                 active={statusFilter === 'return_pending'}
                 onClick={() => setStatusFilter('return_pending')}
               >
                 รอรับคืน
               </FilterButton>
+
               <FilterButton
                 active={statusFilter === 'returned'}
                 onClick={() => setStatusFilter('returned')}
               >
                 คืนแล้ว
               </FilterButton>
+
               <FilterButton
                 active={statusFilter === 'cancelled'}
                 onClick={() => setStatusFilter('cancelled')}
@@ -880,12 +885,14 @@ export default function MyBookingsPage() {
               >
                 ประเภททั้งหมด
               </FilterButton>
+
               <FilterButton
                 active={typeFilter === 'equipment'}
                 onClick={() => setTypeFilter('equipment')}
               >
                 อุปกรณ์
               </FilterButton>
+
               <FilterButton
                 active={typeFilter === 'computer'}
                 onClick={() => setTypeFilter('computer')}
@@ -976,6 +983,7 @@ export default function MyBookingsPage() {
                   <h3 className="text-base font-black leading-snug text-slate-900">
                     {getRequestTitle(selected)}
                   </h3>
+
                   <p className="mt-1 text-xs font-bold text-slate-500">
                     {getRequestSubtitle(selected)}
                   </p>
@@ -990,19 +998,24 @@ export default function MyBookingsPage() {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <InfoBlock label="ประเภท" value={getRequestTypeText(selected)} />
+
               <InfoBlock label="สถานะ" value={getStatusText(selected.status)} />
+
               <InfoBlock
                 label="วันที่ยืม"
                 value={formatThaiDateTime(selected.borrow_date)}
               />
+
               <InfoBlock
                 label="กำหนดคืน"
                 value={formatThaiDateTime(selected.return_date)}
               />
+
               <InfoBlock
                 label="วันที่ส่งคำขอ"
                 value={formatThaiDateTime(selected.created_at)}
               />
+
               <InfoBlock
                 label="วันที่คืนสำเร็จ"
                 value={
@@ -1017,27 +1030,15 @@ export default function MyBookingsPage() {
               <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">
                 เหตุผล
               </p>
+
               <p className="text-sm font-bold leading-relaxed text-slate-700">
                 {selected.reason || 'ไม่ได้ระบุเหตุผล'}
               </p>
             </div>
 
-            {selected.status === 'approved' && (
-              <Button
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 py-4 text-sm font-black text-white shadow-lg shadow-red-100"
-                onClick={() => {
-                  setDetailOpen(false);
-                  handleRequestReturn(selected);
-                }}
-              >
-                <RotateCcw size={17} />
-                <span>{getRequestButtonText(selected)}</span>
-              </Button>
-            )}
-
             {selected.status === 'pending' && (
               <Button
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-700 py-4 text-sm font-black text-white shadow-lg shadow-slate-100"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 py-4 text-sm font-black text-white shadow-lg shadow-red-100 hover:bg-red-600"
                 onClick={() => {
                   setDetailOpen(false);
                   handleCancelBooking(selected);
@@ -1045,6 +1046,19 @@ export default function MyBookingsPage() {
               >
                 <XCircle size={17} />
                 <span>ยกเลิกคำขอ</span>
+              </Button>
+            )}
+
+            {selected.status === 'approved' && (
+              <Button
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 py-4 text-sm font-black text-white shadow-lg shadow-red-100 hover:bg-red-600"
+                onClick={() => {
+                  setDetailOpen(false);
+                  handleRequestReturn(selected);
+                }}
+              >
+                <RotateCcw size={17} />
+                <span>{getRequestButtonText(selected)}</span>
               </Button>
             )}
           </div>
@@ -1079,6 +1093,7 @@ export default function MyBookingsPage() {
                 <h3 className="text-sm font-black text-slate-800">
                   {popup.title}
                 </h3>
+
                 <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
                   {popup.message}
                 </p>
@@ -1097,6 +1112,7 @@ function InfoBlock({ label, value }: { label: string; value: string }) {
       <p className="mb-1 text-[11px] font-black uppercase tracking-wide text-slate-400">
         {label}
       </p>
+
       <p className="text-sm font-bold text-slate-800">{value}</p>
     </div>
   );
