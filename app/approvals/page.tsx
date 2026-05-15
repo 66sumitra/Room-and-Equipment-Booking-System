@@ -1064,10 +1064,10 @@ ${itemCodeLabel}: ${itemCode}
         </div>
 
         <Button
-          className="h-12 rounded-2xl bg-amber-100 px-5 text-sm font-black !text-amber-700 shadow-sm hover:bg-amber-200"
+          className="h-12 rounded-2xl bg-blue-600 px-5 text-sm font-black !text-white shadow-lg shadow-blue-100 hover:bg-blue-700"
           onClick={() => openConfirm(req, 'confirm_return')}
         >
-          <CheckCircle2 size={17} className="mr-2" />
+          <CheckCircle2 size={17} className="mr-2 text-white" />
           ยืนยันรับคืน
         </Button>
       </div>
@@ -1580,7 +1580,7 @@ ${itemCodeLabel}: ${itemCode}
                 ? 'bg-emerald-50'
                 : actionType === 'reject'
                 ? 'bg-red-50'
-                : 'bg-amber-50'
+                : 'bg-blue-50'
             }`}
           >
             {actionType === 'approve' ? (
@@ -1588,7 +1588,7 @@ ${itemCodeLabel}: ${itemCode}
             ) : actionType === 'reject' ? (
               <AlertCircle size={40} className="text-red-500" />
             ) : (
-              <RotateCcw size={40} className="text-amber-500" />
+              <RotateCcw size={40} className="text-blue-600" />
             )}
           </div>
 
@@ -1658,12 +1658,12 @@ ${itemCodeLabel}: ${itemCode}
               ยกเลิก
             </Button>
             <Button
-              className={`flex-[1.5] rounded-2xl py-3 font-black text-white shadow-lg ${
+              className={`flex-[1.5] rounded-2xl py-3 font-black !text-white shadow-lg ${
                 actionType === 'approve'
-                  ? 'bg-emerald-500'
+                  ? 'bg-emerald-500 hover:bg-emerald-600'
                   : actionType === 'reject'
-                  ? 'bg-red-500'
-                  : 'bg-amber-500'
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-blue-600 hover:bg-blue-700'
               }`}
               onClick={handleFinalAction}
             >
